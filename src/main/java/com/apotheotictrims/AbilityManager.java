@@ -25,7 +25,7 @@ public final class AbilityManager {
     private final Map<UUID, Long> lastWildJump = new HashMap<>();
     private final Set<UUID> spireFallProtection = new HashSet<>();
     private final Set<UUID> spireSlowFalling = new HashSet<>();
-    private final EyeChargeTracker eyeCharges = new EyeChargeTracker();
+    private final EyeStareManager eyeStares = new EyeStareManager();
     private final CoastMountManager coastMounts;
     private final NamespacedKey duneModifierKey;
     private final NamespacedKey raiserModifierKey;
@@ -55,6 +55,7 @@ public final class AbilityManager {
         eyeTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (has(player, TrimAbility.EYE)) updateEye(player);
+                else eyeStares.clearViewer(player);
             }
         }, 1L, 5L);
         spireTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -76,7 +77,7 @@ public final class AbilityManager {
         spireFallProtection.clear();
         spireSlowFalling.clear();
         coastMounts.clear();
-        eyeCharges.clear();
+        eyeStares.clear();
     }
 
     public Optional<TrimAbility> active(Player player) {
@@ -266,25 +267,8 @@ public final class AbilityManager {
     }
 
     private void updateEye(Player player) {
-        long tick = Bukkit.getCurrentTick();
         Player target = EyeTargeting.findTarget(player);
-        long stareTicks = Math.round(settings.value(TrimAbility.EYE, "stare-seconds") * 20);
-        if (eyeCharges.stare(player.getUniqueId(), target == null ? null : target.getUniqueId(), tick, stareTicks)) {
-            int duration = Math.max(1, (int) Math.round(settings.value(TrimAbility.EYE, "stare-effect-seconds") * 20));
-            target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, duration, 0, false, false, true), false);
-            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, duration,
-                    settings.intValue(TrimAbility.EYE, "slowness-level") - 1, false, false, true), false);
-            feedback(player, Sound.ENTITY_ENDER_EYE_LAUNCH, Particle.GLOW);
-        }
-        long sneakTicks = Math.round(settings.value(TrimAbility.EYE, "sneak-seconds") * 20);
-        if (!eyeCharges.sneak(player.getUniqueId(), player.isSneaking(), tick, sneakTicks)) return;
-        double radius = settings.value(TrimAbility.EYE, "radius");
-        int duration = Math.max(1, (int) Math.round(settings.value(TrimAbility.EYE, "reveal-seconds") * 20));
-        for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
-            if (nearby != player && player.canSee(nearby))
-                nearby.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, duration, 0, false, false, true), false);
-        }
-        feedback(player, Sound.ENTITY_ENDER_EYE_LAUNCH, Particle.GLOW);
+        eyeStares.update(player, target, settings.particles());
     }
 
     private void quietWardens(Player player) {
@@ -337,10 +321,10 @@ public final class AbilityManager {
         cleanup(player, active.remove(player.getUniqueId()));
         comboTracker.clear(player.getUniqueId());
         spireFallProtection.remove(player.getUniqueId());
-        eyeCharges.clear(player.getUniqueId());
+        eyeStares.clear(player);
     }
 
-    public void clearEye(Player player) { eyeCharges.clear(player.getUniqueId()); }
+    public void clearEye(Player player) { eyeStares.clear(player); }
 
     private void cleanup(Player player, TrimAbility previous) {
         UUID id = player.getUniqueId();
@@ -356,7 +340,7 @@ public final class AbilityManager {
             spireFallProtection.remove(id);
             removeSpireSlowFalling(player);
         }
-        if (previous == TrimAbility.EYE) eyeCharges.clear(id);
+        if (previous == TrimAbility.EYE) eyeStares.clearViewer(player);
     }
 
     private record ActivationFeedback(Sound sound, Particle particle) {}

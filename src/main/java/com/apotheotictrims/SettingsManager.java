@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 public final class SettingsManager {
-    public static final int SCHEMA_VERSION = 9;
+    public static final int SCHEMA_VERSION = 10;
     private final Path dataDirectory;
     private final Logger logger;
     private final Map<TrimAbility, Boolean> enabled = new EnumMap<>(TrimAbility.class);
@@ -55,12 +55,13 @@ public final class SettingsManager {
         boolean migrated = false;
         if (loadedSchema < 2) { migrateVersionTwo(); migrated = true; }
         if (loadedSchema < 3) { migrateVersionThree(); migrated = true; }
-        if (loadedSchema < 4) { migrateVersionFour(yaml); migrated = true; }
+        if (loadedSchema < 4) migrated = true;
         if (loadedSchema < 5) migrated = true;
         if (loadedSchema < 6) migrated = true;
         if (loadedSchema < 7) { migrateVersionSeven(yaml, loadedSchema); migrated = true; }
         if (loadedSchema < 8) migrated = true;
         if (loadedSchema < 9) { migrateVersionNine(); migrated = true; }
+        if (loadedSchema < 10) migrated = true;
         if (migrated) save();
     }
 
@@ -186,19 +187,6 @@ public final class SettingsManager {
         if (Double.compare(shaper.get("haste-level"), 1.0) == 0) shaper.put("haste-level", 2.0);
         Map<String, Double> host = values.get(TrimAbility.HOST);
         if (Double.compare(host.get("hero-level"), 1.0) == 0) host.put("hero-level", 5.0);
-    }
-
-    private void migrateVersionFour(YamlConfiguration yaml) {
-        String oldEyeGlow = "abilities.eye.values.glow-seconds";
-        if (!yaml.contains(oldEyeGlow)) return;
-        double oldDuration = yaml.getDouble(oldEyeGlow);
-        if (Double.compare(oldDuration, 15.0) == 0) return;
-        SettingSpec reveal = TrimAbility.EYE.setting("reveal-seconds").orElseThrow();
-        try {
-            values.get(TrimAbility.EYE).put(reveal.key(), reveal.validate(oldDuration));
-        } catch (IllegalArgumentException ex) {
-            logger.warning("Invalid saved Eye glow duration; using the new reveal default.");
-        }
     }
 
     private void migrateVersionSeven(YamlConfiguration yaml, int loadedSchema) {

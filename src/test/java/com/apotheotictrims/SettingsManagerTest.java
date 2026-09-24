@@ -26,7 +26,7 @@ class SettingsManagerTest {
         defaults.load();
         assertEquals(1, defaults.intValue(TrimAbility.RIB, "regeneration-level"));
         String saved = Files.readString(directory.resolve("settings.yml"));
-        assertTrue(saved.contains("schema-version: 9"));
+        assertTrue(saved.contains("schema-version: 10"));
         assertFalse(saved.contains("fire-resistance-level"));
 
         Path custom = Files.createDirectory(directory.resolve("custom-rib"));
@@ -80,9 +80,7 @@ class SettingsManagerTest {
         assertTrue(TrimAbility.RIB.setting("fire-resistance-level").isEmpty());
         for (CoastMountCategory category : CoastMountCategory.values())
             assertEquals(1.3, second.value(TrimAbility.COAST, category.settingKey()));
-        assertEquals(5, second.value(TrimAbility.EYE, "stare-seconds"));
-        assertEquals(15, second.value(TrimAbility.EYE, "stare-effect-seconds"));
-        assertEquals(10, second.value(TrimAbility.EYE, "reveal-seconds"));
+        assertTrue(TrimAbility.EYE.settings().isEmpty());
         assertEquals(1.3, second.value(TrimAbility.SENTRY, "damage-multiplier"));
         assertThrows(IllegalArgumentException.class,
                 () -> second.setValue(TrimAbility.DUNE, "knockback-resistance", 2));
@@ -105,7 +103,7 @@ class SettingsManagerTest {
         migrated.load();
         assertEquals(10, migrated.value(TrimAbility.BOLT, "bonus-damage"));
         assertEquals(90, migrated.value(TrimAbility.VEX, "duration-seconds"));
-        assertTrue(Files.readString(directory.resolve("settings.yml")).contains("schema-version: 9"));
+        assertTrue(Files.readString(directory.resolve("settings.yml")).contains("schema-version: 10"));
 
         Path custom = Files.createDirectory(directory.resolve("custom"));
         Files.writeString(custom.resolve("settings.yml"), """
@@ -125,7 +123,7 @@ class SettingsManagerTest {
     }
 
     @Test
-    void migratesEyeDurationAndRemovesObsoleteCoastLuck() throws Exception {
+    void removesObsoleteEyeSettingsAndCoastLuck() throws Exception {
         Files.writeString(directory.resolve("settings.yml"), """
                 schema-version: 3
                 abilities:
@@ -142,17 +140,18 @@ class SettingsManagerTest {
                 """);
         SettingsManager settings = new SettingsManager(directory, Logger.getAnonymousLogger());
         settings.load();
-        assertEquals(22, settings.value(TrimAbility.EYE, "radius"));
-        assertEquals(25, settings.value(TrimAbility.EYE, "reveal-seconds"));
+        assertTrue(TrimAbility.EYE.settings().isEmpty());
         assertEquals(3, settings.value(TrimAbility.HOST, "hero-level"));
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("glow-seconds"));
+        assertFalse(saved.contains("radius: 22"));
+        assertFalse(saved.contains("reveal-seconds"));
         assertFalse(saved.contains("luck-level: 4"));
-        assertTrue(saved.contains("schema-version: 9"));
+        assertTrue(saved.contains("schema-version: 10"));
     }
 
     @Test
-    void oldDefaultEyeGlowBecomesTenSecondReveal() throws Exception {
+    void oldDefaultEyeGlowIsRemoved() throws Exception {
         Files.writeString(directory.resolve("settings.yml"), """
                 schema-version: 3
                 abilities:
@@ -162,7 +161,8 @@ class SettingsManagerTest {
                 """);
         SettingsManager settings = new SettingsManager(directory, Logger.getAnonymousLogger());
         settings.load();
-        assertEquals(10, settings.value(TrimAbility.EYE, "reveal-seconds"));
+        assertFalse(Files.readString(directory.resolve("settings.yml")).contains("glow-seconds"));
+        assertTrue(TrimAbility.EYE.settings().isEmpty());
     }
 
     @Test
@@ -180,7 +180,7 @@ class SettingsManagerTest {
         assertEquals(1.8, settings.value(TrimAbility.COAST, "nautilus-multiplier"));
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("zombie-nautilus-multiplier"));
-        assertTrue(saved.contains("schema-version: 9"));
+        assertTrue(saved.contains("schema-version: 10"));
     }
 
     @Test
@@ -204,7 +204,7 @@ class SettingsManagerTest {
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("boat-multiplier"));
         assertFalse(saved.contains("minecart-multiplier"));
-        assertTrue(saved.contains("schema-version: 9"));
+        assertTrue(saved.contains("schema-version: 10"));
     }
 
     @Test
@@ -222,7 +222,7 @@ class SettingsManagerTest {
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("lightning-damage"));
         assertTrue(saved.contains("bonus-damage: 10"));
-        assertTrue(saved.contains("schema-version: 9"));
+        assertTrue(saved.contains("schema-version: 10"));
 
         Path custom = Files.createDirectory(directory.resolve("custom-bolt"));
         Files.writeString(custom.resolve("settings.yml"), """

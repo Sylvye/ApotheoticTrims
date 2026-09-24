@@ -46,7 +46,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
 - **Vex:** Totem pops grant Strength II and Speed II for 90 seconds.
 - **Spire:** Slow Falling while sneaking in the air. Void falls wrap to world height and the resulting fall damage is cancelled.
-- **Eye:** Stare at a visible player for 5 seconds to give them Glowing and Slowness I for 15 seconds. Sneak for 5 seconds to reveal nearby players for 10 seconds, once per sneak.
+- **Eye:** Stare at a visible player's hitbox to give them Weakness I and Glowing while you keep staring. Hold sneak while staring to add Slowness I. Sparse Glow particles appear around the target for everyone.
 - **Silence:** Blocks all negative effects, including Instant Damage.
 - **Wayfinder:** Speed II.
 - **Raiser:** Jump Boost II and double step height (0.6 -> 1.2).
