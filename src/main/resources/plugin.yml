@@ -1,0 +1,21 @@
+name: ApotheoticTrims
+version: '${version}'
+main: com.apotheotictrims.ApotheoticTrimsPlugin
+description: Full armor trim sets grant configurable special abilities.
+author: ApotheoticTrims
+api-version: '26.2'
+commands:
+  trims:
+    description: View and configure trim abilities.
+    usage: /trims [help|info|status|settings|set|toggle|reset]
+    aliases: [trimabilities]
+permissions:
+  apotheotictrims.use:
+    description: Allows trim abilities to activate.
+    default: true
+  apotheotictrims.info:
+    description: Allows viewing trim information.
+    default: true
+  apotheotictrims.admin:
+    description: Allows changing settings and inspecting other players.
+    default: op
