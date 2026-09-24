@@ -24,6 +24,7 @@ public final class AbilityManager {
     private final Set<UUID> wildUsed = new HashSet<>();
     private final Map<UUID, Long> lastWildJump = new HashMap<>();
     private final Set<UUID> spireFallProtection = new HashSet<>();
+    private final Set<UUID> spireSlowFalling = new HashSet<>();
     private final EyeChargeTracker eyeCharges = new EyeChargeTracker();
     private final CoastMountManager coastMounts;
     private final NamespacedKey duneModifierKey;
@@ -31,6 +32,7 @@ public final class AbilityManager {
     private BukkitTask wildTask;
     private BukkitTask coastTask;
     private BukkitTask eyeTask;
+    private BukkitTask spireTask;
 
     public AbilityManager(ApotheoticTrimsPlugin plugin, SettingsManager settings) {
         this.plugin = plugin;
@@ -53,6 +55,9 @@ public final class AbilityManager {
                 if (has(player, TrimAbility.EYE)) updateEye(player);
             }
         }, 1L, 5L);
+        spireTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) updateSpire(player);
+        }, 1L, 1L);
     }
 
     public void stop() {
@@ -60,12 +65,14 @@ public final class AbilityManager {
         if (wildTask != null) wildTask.cancel();
         if (coastTask != null) coastTask.cancel();
         if (eyeTask != null) eyeTask.cancel();
+        if (spireTask != null) spireTask.cancel();
         for (Player player : Bukkit.getOnlinePlayers()) cleanup(player, active.get(player.getUniqueId()));
         active.clear();
         comboTracker.clear();
         wildUsed.clear();
         lastWildJump.clear();
         spireFallProtection.clear();
+        spireSlowFalling.clear();
         coastMounts.clear();
         eyeCharges.clear();
     }
@@ -152,6 +159,27 @@ public final class AbilityManager {
 
     private void effect(Player player, PotionEffectType type, int level) {
         effect(player, type, level, 30);
+    }
+
+    private void updateSpire(Player player) {
+        UUID id = player.getUniqueId();
+        if (!has(player, TrimAbility.SPIRE) || player.isOnGround() || !player.isSneaking()) {
+            removeSpireSlowFalling(player);
+            return;
+        }
+        PotionEffect current = player.getPotionEffect(PotionEffectType.SLOW_FALLING);
+        if (current == null || (spireSlowFalling.contains(id) && current.getDuration() <= 2)) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 3, 0, false, false, true));
+            spireSlowFalling.add(id);
+        }
+    }
+
+    private void removeSpireSlowFalling(Player player) {
+        if (!spireSlowFalling.remove(player.getUniqueId())) return;
+        PotionEffect current = player.getPotionEffect(PotionEffectType.SLOW_FALLING);
+        if (current != null && current.getAmplifier() == 0 && current.getDuration() <= 3) {
+            player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+        }
     }
 
     private void effect(Player player, PotionEffectType type, int level, int duration) {
@@ -303,7 +331,10 @@ public final class AbilityManager {
         }
         wildUsed.remove(id);
         if (previous == TrimAbility.BOLT) comboTracker.clear(id);
-        if (previous == TrimAbility.SPIRE) spireFallProtection.remove(id);
+        if (previous == TrimAbility.SPIRE) {
+            spireFallProtection.remove(id);
+            removeSpireSlowFalling(player);
+        }
         if (previous == TrimAbility.EYE) eyeCharges.clear(id);
     }
 

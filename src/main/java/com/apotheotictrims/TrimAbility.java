@@ -37,7 +37,7 @@ public enum TrimAbility {
     VEX("Vex", Material.VEX_ARMOR_TRIM_SMITHING_TEMPLATE, "Totem activations grant Strength and Speed",
             level("strength-level", "Strength level", 2), level("speed-level", "Speed level", 2),
             decimal("duration-seconds", "Duration seconds", 90, .1, 600, .5, 5)),
-    SPIRE("Spire", Material.SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE, "Falling into the void wraps you to world height"),
+    SPIRE("Spire", Material.SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE, "Slow Falling while sneaking in air; void falls wrap to world height"),
     EYE("Eye", Material.EYE_ARMOR_TRIM_SMITHING_TEMPLATE, "Stare to slow and reveal; sneak to reveal nearby players",
             decimal("radius", "Sneak reveal radius", 10, 0, 64, .5, 2),
             decimal("stare-seconds", "Stare charge seconds", 5, .1, 600, .5, 5),

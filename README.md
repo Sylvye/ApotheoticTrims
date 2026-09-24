@@ -45,7 +45,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Rib:** Immune to fire damage, including lava, magma blocks, and campfires; Regeneration I by default while burning.
 - **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
 - **Vex:** A used totem grants Strength and Speed for 90 seconds by default.
-- **Spire:** Void falls wrap to world height and the resulting fall damage is cancelled.
+- **Spire:** Slow Falling while sneaking in the air. Void falls wrap to world height and the resulting fall damage is cancelled.
 - **Eye:** Stare at a visible player for 5 seconds to give them Glowing and Slowness I for 15 seconds. Sneak for 5 seconds to reveal nearby players for 10 seconds, once per sneak.
 - **Silence:** Blocks the configured list of negative effects, including Instant Damage.
 - **Wayfinder:** Speed II.
