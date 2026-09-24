@@ -34,22 +34,22 @@ In an ability screen, left/right click changes a number by its small step and sh
 
 ## Abilities
 
-- **Tide:** Dolphin's Grace and Resistance in water.
+- **Tide:** Dolphin's Grace and Resistance in water & rain.
 - **Coast:** A 30% default speed boost to the living mount you ride, with separate in-game controls for land mounts, nautiluses, and happy ghasts. Boats and minecarts are unaffected.
-- **Dune:** Knockback resistance.
-- **Wild:** One flight-key double jump per airborne cycle; no fall damage while the full set is active.
+- **Dune:** Knockback resistance equivalent to netherite armor.
+- **Wild:** Double jump & fall damage nullification.
 - **Sentry:** Player-shot damaging projectiles deal 1.3x damage.
-- **Snout:** Hostile mobs ignore the wearer until the wearer, their projectile, or their pet attacks that mob.
+- **Snout:** Hostile mobs ignore the wearer until that mob is hit with an attack attributed to that player.
 - **Bolt:** A 10-hit timed melee combo adds 10 raw damage to the triggering hit and calls visual-only lightning.
-- **Flow:** A disabled shield repels nearby living entities.
-- **Rib:** Immune to fire damage, including lava, magma blocks, and campfires; Regeneration I by default while burning.
+- **Flow:** A disabled shield violently repels nearby living entities.
+- **Rib:** Immune to fire damage, including lava, magma blocks, and campfires; Regeneration I is given while burning.
 - **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
-- **Vex:** A used totem grants Strength and Speed for 90 seconds by default.
+- **Vex:** Totem pops grant Strength II and Speed II for 90 seconds.
 - **Spire:** Slow Falling while sneaking in the air. Void falls wrap to world height and the resulting fall damage is cancelled.
 - **Eye:** Stare at a visible player for 5 seconds to give them Glowing and Slowness I for 15 seconds. Sneak for 5 seconds to reveal nearby players for 10 seconds, once per sneak.
-- **Silence:** Blocks the configured list of negative effects, including Instant Damage.
+- **Silence:** Blocks all negative effects, including Instant Damage.
 - **Wayfinder:** Speed II.
-- **Raiser:** Jump Boost and +0.6 step height by default (0.6 → 1.2).
+- **Raiser:** Jump Boost II and double step height (0.6 -> 1.2).
 - **Shaper:** Haste II.
 - **Host:** Hero of the Village V and Luck I.
 
