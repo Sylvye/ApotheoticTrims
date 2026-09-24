@@ -49,7 +49,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Eye:** Stare at a visible player for 5 seconds to give them Glowing and Slowness I for 15 seconds. Sneak for 5 seconds to reveal nearby players for 10 seconds, once per sneak.
 - **Silence:** Blocks the configured list of negative effects, including Instant Damage.
 - **Wayfinder:** Speed II.
-- **Raiser:** Jump Boost.
+- **Raiser:** Jump Boost and +0.6 step height by default (0.6 → 1.2).
 - **Shaper:** Haste II.
 - **Host:** Hero of the Village V and Luck I.
 

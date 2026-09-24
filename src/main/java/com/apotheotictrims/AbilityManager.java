@@ -28,6 +28,7 @@ public final class AbilityManager {
     private final EyeChargeTracker eyeCharges = new EyeChargeTracker();
     private final CoastMountManager coastMounts;
     private final NamespacedKey duneModifierKey;
+    private final NamespacedKey raiserModifierKey;
     private BukkitTask task;
     private BukkitTask wildTask;
     private BukkitTask coastTask;
@@ -38,6 +39,7 @@ public final class AbilityManager {
         this.plugin = plugin;
         this.settings = settings;
         this.duneModifierKey = new NamespacedKey(plugin, "dune_knockback_resistance");
+        this.raiserModifierKey = new NamespacedKey(plugin, "raiser_step_height");
         this.coastMounts = new CoastMountManager(plugin, settings);
     }
 
@@ -146,7 +148,10 @@ public final class AbilityManager {
                 case EYE -> { }
                 case SILENCE -> SilenceEffects.types().forEach(player::removePotionEffect);
                 case WAYFINDER -> effect(player, PotionEffectType.SPEED, settings.intValue(ability, "speed-level"));
-                case RAISER -> effect(player, PotionEffectType.JUMP_BOOST, settings.intValue(ability, "jump-boost-level"));
+                case RAISER -> {
+                    effect(player, PotionEffectType.JUMP_BOOST, settings.intValue(ability, "jump-boost-level"));
+                    applyRaiser(player);
+                }
                 case SHAPER -> effect(player, PotionEffectType.HASTE, settings.intValue(ability, "haste-level"));
                 case HOST -> {
                     effect(player, PotionEffectType.HERO_OF_THE_VILLAGE, settings.intValue(ability, "hero-level"));
@@ -206,6 +211,21 @@ public final class AbilityManager {
     private void removeDune(Player player) {
         AttributeInstance attribute = player.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
         if (attribute != null) attribute.removeModifier(duneModifierKey);
+    }
+
+    private void applyRaiser(Player player) {
+        AttributeInstance attribute = player.getAttribute(Attribute.STEP_HEIGHT);
+        if (attribute == null) return;
+        double amount = settings.value(TrimAbility.RAISER, "step-height-bonus");
+        AttributeModifier current = attribute.getModifier(raiserModifierKey);
+        if (current != null && current.getAmount() == amount) return;
+        if (current != null) attribute.removeModifier(current);
+        attribute.addTransientModifier(new AttributeModifier(raiserModifierKey, amount, AttributeModifier.Operation.ADD_NUMBER));
+    }
+
+    private void removeRaiser(Player player) {
+        AttributeInstance attribute = player.getAttribute(Attribute.STEP_HEIGHT);
+        if (attribute != null) attribute.removeModifier(raiserModifierKey);
     }
 
     private void updateWild(Player player) {
@@ -325,6 +345,7 @@ public final class AbilityManager {
     private void cleanup(Player player, TrimAbility previous) {
         UUID id = player.getUniqueId();
         removeDune(player);
+        removeRaiser(player);
         if (grantedFlight.remove(id) && player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR) {
             player.setAllowFlight(false);
             player.setFlying(false);
