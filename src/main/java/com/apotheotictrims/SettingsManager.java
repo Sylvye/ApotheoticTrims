@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 public final class SettingsManager {
-    public static final int SCHEMA_VERSION = 3;
+    public static final int SCHEMA_VERSION = 7;
     private final Path dataDirectory;
     private final Logger logger;
     private final Map<TrimAbility, Boolean> enabled = new EnumMap<>(TrimAbility.class);
@@ -55,6 +55,10 @@ public final class SettingsManager {
         boolean migrated = false;
         if (loadedSchema < 2) { migrateVersionTwo(); migrated = true; }
         if (loadedSchema < 3) { migrateVersionThree(); migrated = true; }
+        if (loadedSchema < 4) { migrateVersionFour(yaml); migrated = true; }
+        if (loadedSchema < 5) migrated = true;
+        if (loadedSchema < 6) migrated = true;
+        if (loadedSchema < 7) { migrateVersionSeven(yaml, loadedSchema); migrated = true; }
         if (migrated) save();
     }
 
@@ -165,8 +169,6 @@ public final class SettingsManager {
     }
 
     private void migrateVersionTwo() {
-        Map<String, Double> bolt = values.get(TrimAbility.BOLT);
-        if (Double.compare(bolt.get("lightning-damage"), 4.0) == 0) bolt.put("lightning-damage", 12.0);
         Map<String, Double> vex = values.get(TrimAbility.VEX);
         if (Double.compare(vex.get("duration-seconds"), 15.0) == 0) vex.put("duration-seconds", 90.0);
     }
@@ -176,12 +178,40 @@ public final class SettingsManager {
         if (Double.compare(sentry.get("damage-multiplier"), 1.5) == 0) sentry.put("damage-multiplier", 1.3);
         Map<String, Double> bolt = values.get(TrimAbility.BOLT);
         if (Double.compare(bolt.get("combo-hits"), 20.0) == 0) bolt.put("combo-hits", 10.0);
-        if (Double.compare(bolt.get("lightning-damage"), 12.0) == 0) bolt.put("lightning-damage", 16.0);
         Map<String, Double> wayfinder = values.get(TrimAbility.WAYFINDER);
         if (Double.compare(wayfinder.get("speed-level"), 1.0) == 0) wayfinder.put("speed-level", 2.0);
         Map<String, Double> shaper = values.get(TrimAbility.SHAPER);
         if (Double.compare(shaper.get("haste-level"), 1.0) == 0) shaper.put("haste-level", 2.0);
         Map<String, Double> host = values.get(TrimAbility.HOST);
         if (Double.compare(host.get("hero-level"), 1.0) == 0) host.put("hero-level", 5.0);
+    }
+
+    private void migrateVersionFour(YamlConfiguration yaml) {
+        String oldEyeGlow = "abilities.eye.values.glow-seconds";
+        if (!yaml.contains(oldEyeGlow)) return;
+        double oldDuration = yaml.getDouble(oldEyeGlow);
+        if (Double.compare(oldDuration, 15.0) == 0) return;
+        SettingSpec reveal = TrimAbility.EYE.setting("reveal-seconds").orElseThrow();
+        try {
+            values.get(TrimAbility.EYE).put(reveal.key(), reveal.validate(oldDuration));
+        } catch (IllegalArgumentException ex) {
+            logger.warning("Invalid saved Eye glow duration; using the new reveal default.");
+        }
+    }
+
+    private void migrateVersionSeven(YamlConfiguration yaml, int loadedSchema) {
+        String oldKey = "abilities.bolt.values.lightning-damage";
+        String newKey = "abilities.bolt.values.bonus-damage";
+        if (!yaml.contains(oldKey) || yaml.contains(newKey)) return;
+        double oldValue = yaml.getDouble(oldKey);
+        double migrated = Double.compare(oldValue, 16.0) == 0
+                || loadedSchema < 2 && Double.compare(oldValue, 4.0) == 0
+                || loadedSchema == 2 && Double.compare(oldValue, 12.0) == 0 ? 10.0 : oldValue;
+        SettingSpec bonus = TrimAbility.BOLT.setting("bonus-damage").orElseThrow();
+        try {
+            values.get(TrimAbility.BOLT).put(bonus.key(), bonus.validate(migrated));
+        } catch (IllegalArgumentException ex) {
+            logger.warning("Invalid saved Bolt lightning damage; using the new bonus default.");
+        }
     }
 }

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class MenuManager implements Listener {
+    private static final int[] VALUE_SLOTS = {10, 12, 14, 16, 19, 21, 23, 25};
     private final SettingsManager settings;
     private final AbilityManager abilities;
     private ChatInputManager chatInput;
@@ -62,12 +63,12 @@ public final class MenuManager implements Listener {
         description.add(Component.text(ability.description(), NamedTextColor.GRAY));
         description.add(Component.text("Requires a full " + ability.displayName() + " set", NamedTextColor.DARK_GRAY));
         inventory.setItem(4, item(ability.icon(), ability.displayName(), description));
-        inventory.setItem(10, item(settings.enabled(ability) ? Material.LIME_DYE : Material.GRAY_DYE,
+        inventory.setItem(47, item(settings.enabled(ability) ? Material.LIME_DYE : Material.GRAY_DYE,
                 settings.enabled(ability) ? "Enabled" : "Disabled", List.of(Component.text(
                         player.hasPermission("apotheotictrims.admin") ? "Click to toggle" : "Admin controlled", NamedTextColor.GRAY))));
         int index = 0;
         for (SettingSpec spec : ability.settings()) {
-            int valueSlot = 12 + index * 2;
+            int valueSlot = VALUE_SLOTS[index];
             double value = settings.value(ability, spec.key());
             inventory.setItem(valueSlot, item(Material.PAPER, spec.label() + ": " + spec.format(value), List.of(
                     Component.text("Left/right: +/- " + spec.format(spec.step()), NamedTextColor.GRAY),
@@ -77,9 +78,9 @@ public final class MenuManager implements Listener {
                     List.of(Component.text("Click, then type the number in chat", NamedTextColor.GRAY))));
             index++;
         }
-        inventory.setItem(18, item(Material.ARROW, "Back", List.of()));
+        inventory.setItem(45, item(Material.ARROW, "Back", List.of()));
         if (player.hasPermission("apotheotictrims.admin")) {
-            inventory.setItem(22, item(Material.BARRIER, "Reset ability", List.of(Component.text("Restore defaults", NamedTextColor.GRAY))));
+            inventory.setItem(49, item(Material.BARRIER, "Reset ability", List.of(Component.text("Restore defaults", NamedTextColor.GRAY))));
         }
         player.openInventory(inventory);
     }
@@ -118,15 +119,15 @@ public final class MenuManager implements Listener {
         }
         DetailHolder detail = (DetailHolder) rawHolder;
         TrimAbility ability = detail.ability;
-        if (slot == 18) { openCatalog(player); return; }
+        if (slot == 45) { openCatalog(player); return; }
         if (!player.hasPermission("apotheotictrims.admin")) return;
-        if (slot == 10) {
+        if (slot == 47) {
             settings.toggle(ability);
             abilities.refreshAll();
             openDetail(player, ability);
             return;
         }
-        if (slot == 22) {
+        if (slot == 49) {
             settings.reset(ability);
             abilities.refreshAll();
             openDetail(player, ability);
@@ -134,7 +135,7 @@ public final class MenuManager implements Listener {
         }
         for (int i = 0; i < ability.settings().size(); i++) {
             SettingSpec spec = ability.settings().get(i);
-            int valueSlot = 12 + i * 2;
+            int valueSlot = VALUE_SLOTS[i];
             if (slot == valueSlot + 1) {
                 chatInput.prompt(player, ability, spec);
                 return;
@@ -182,7 +183,7 @@ public final class MenuManager implements Listener {
         private final Inventory inventory;
         private DetailHolder(TrimAbility ability) {
             this.ability = ability;
-            this.inventory = Bukkit.createInventory(this, 27, Component.text(ability.displayName() + " settings"));
+            this.inventory = Bukkit.createInventory(this, 54, Component.text(ability.displayName() + " settings"));
         }
         @Override public Inventory getInventory() { return inventory; }
     }

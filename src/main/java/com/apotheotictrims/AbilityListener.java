@@ -4,8 +4,6 @@ import io.papermc.paper.event.entity.WardenAngerChangeEvent;
 import io.papermc.paper.event.player.PlayerShieldDisableEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
-import org.bukkit.damage.DamageSource;
-import org.bukkit.damage.DamageType;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -40,6 +38,7 @@ public final class AbilityListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
+        if (event.isCancelled()) return;
         Player credited = creditedPlayer(event);
         if (event.getEntity() instanceof Enemy enemy && credited != null && abilities.has(credited, TrimAbility.SNOUT)) {
             retaliation.entrySet().removeIf(entry -> entry.getValue() < System.currentTimeMillis());
@@ -65,18 +64,10 @@ public final class AbilityListener implements Listener {
             long timeout = Math.round(settings.value(TrimAbility.BOLT, "timeout-seconds") * 1000);
             ComboTracker.Result result = abilities.combos().hit(player.getUniqueId(), System.currentTimeMillis(), threshold, timeout);
             if (result.triggered()) {
-                abilities.actionBar(player, Component.text("Bolt combo! ⚡"));
-                abilities.feedback(player, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, Particle.ELECTRIC_SPARK);
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (!target.isValid() || target.isDead()) return;
-                    LightningStrike lightning = target.getWorld().strikeLightningEffect(target.getLocation());
-                    DamageSource source = DamageSource.builder(DamageType.LIGHTNING_BOLT)
-                            .withDirectEntity(lightning)
-                            .withCausingEntity(player)
-                            .withDamageLocation(target.getLocation())
-                            .build();
-                    target.damage(settings.value(TrimAbility.BOLT, "lightning-damage"), source);
-                });
+                event.setDamage(event.getDamage() + settings.value(TrimAbility.BOLT, "bonus-damage"));
+                abilities.boltTriggerFeedback(player);
+                Location strikeAt = target.getLocation();
+                Bukkit.getScheduler().runTask(plugin, () -> strikeAt.getWorld().strikeLightningEffect(strikeAt));
             } else {
                 abilities.actionBar(player, Component.text("Bolt combo: " + result.count() + "/" + threshold));
             }
@@ -163,8 +154,7 @@ public final class AbilityListener implements Listener {
             wrapFromVoid(player);
         } else if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
             boolean spireProtected = abilities.spireFallProtection().remove(player.getUniqueId());
-            boolean wildProtected = abilities.consumeWildLandingProtection(player);
-            if (spireProtected || wildProtected) event.setCancelled(true);
+            if (spireProtected || abilities.has(player, TrimAbility.WILD)) event.setCancelled(true);
         }
     }
 
@@ -198,7 +188,7 @@ public final class AbilityListener implements Listener {
     public void onToggleFlight(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
         if ((player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE)
-                && abilities.has(player, TrimAbility.WILD)) {
+                && abilities.has(player, TrimAbility.WILD) && abilities.ownsWildFlight(player)) {
             event.setCancelled(true);
             abilities.performDoubleJump(player);
         }
@@ -211,7 +201,7 @@ public final class AbilityListener implements Listener {
         retaliation.entrySet().removeIf(entry -> entry.getKey().mob().equals(dead));
     }
     @EventHandler public void onChangedWorld(PlayerChangedWorldEvent event) {
-        abilities.clearWildLandingProtection(event.getPlayer());
+        abilities.clearEye(event.getPlayer());
         scheduleRefresh(event.getPlayer());
     }
     @EventHandler public void onRespawn(PlayerRespawnEvent event) { scheduleRefresh(event.getPlayer()); }

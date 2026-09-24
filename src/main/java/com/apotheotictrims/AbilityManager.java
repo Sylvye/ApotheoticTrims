@@ -23,30 +23,51 @@ public final class AbilityManager {
     private final Set<UUID> grantedFlight = new HashSet<>();
     private final Set<UUID> wildUsed = new HashSet<>();
     private final Map<UUID, Long> lastWildJump = new HashMap<>();
-    private final LandingProtectionTracker wildLandingProtection = new LandingProtectionTracker();
     private final Set<UUID> spireFallProtection = new HashSet<>();
+    private final EyeChargeTracker eyeCharges = new EyeChargeTracker();
+    private final CoastMountManager coastMounts;
     private final NamespacedKey duneModifierKey;
     private BukkitTask task;
+    private BukkitTask wildTask;
+    private BukkitTask coastTask;
+    private BukkitTask eyeTask;
 
     public AbilityManager(ApotheoticTrimsPlugin plugin, SettingsManager settings) {
         this.plugin = plugin;
         this.settings = settings;
         this.duneModifierKey = new NamespacedKey(plugin, "dune_knockback_resistance");
+        this.coastMounts = new CoastMountManager(plugin, settings);
     }
 
     public void start() {
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 10L);
+        wildTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (has(player, TrimAbility.WILD)) updateWild(player);
+            }
+        }, 1L, 1L);
+        coastTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> coastMounts.tick(Bukkit.getOnlinePlayers(),
+                player -> has(player, TrimAbility.COAST)), 1L, 1L);
+        eyeTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (has(player, TrimAbility.EYE)) updateEye(player);
+            }
+        }, 1L, 5L);
     }
 
     public void stop() {
         if (task != null) task.cancel();
+        if (wildTask != null) wildTask.cancel();
+        if (coastTask != null) coastTask.cancel();
+        if (eyeTask != null) eyeTask.cancel();
         for (Player player : Bukkit.getOnlinePlayers()) cleanup(player, active.get(player.getUniqueId()));
         active.clear();
         comboTracker.clear();
         wildUsed.clear();
         lastWildJump.clear();
-        wildLandingProtection.clear();
         spireFallProtection.clear();
+        coastMounts.clear();
+        eyeCharges.clear();
     }
 
     public Optional<TrimAbility> active(Player player) {
@@ -61,6 +82,7 @@ public final class AbilityManager {
 
     public void refreshAll() {
         for (Player player : Bukkit.getOnlinePlayers()) refresh(player);
+        coastMounts.tick(Bukkit.getOnlinePlayers(), player -> has(player, TrimAbility.COAST));
     }
 
     public void refresh(Player player) {
@@ -74,6 +96,7 @@ public final class AbilityManager {
                 active.remove(id);
             } else {
                 active.put(id, detected);
+                if (detected == TrimAbility.WILD) updateWild(player);
                 playActivationFeedback(player, detected);
             }
         }
@@ -85,8 +108,6 @@ public final class AbilityManager {
             if (spireFallProtection.contains(player.getUniqueId()) && (player.isOnGround() || player.isInWater())) {
                 spireFallProtection.remove(player.getUniqueId());
             }
-            wildLandingProtection.clearAfterSafeLanding(player.getUniqueId(), Bukkit.getCurrentTick(),
-                    player.isOnGround(), player.isInWater());
             TrimAbility ability = active.get(player.getUniqueId());
             if (ability == null) continue;
             switch (ability) {
@@ -96,26 +117,37 @@ public final class AbilityManager {
                         effect(player, PotionEffectType.RESISTANCE, settings.intValue(ability, "resistance-level"));
                     }
                 }
-                case COAST -> effect(player, PotionEffectType.LUCK, settings.intValue(ability, "luck-level"));
+                case COAST -> { }
                 case DUNE -> applyDune(player);
-                case WILD -> updateWild(player);
-                case RIB -> effect(player, PotionEffectType.FIRE_RESISTANCE, settings.intValue(ability, "fire-resistance-level"));
+                case WILD -> { }
+                case RIB -> {
+                    effect(player, PotionEffectType.FIRE_RESISTANCE, settings.intValue(ability, "fire-resistance-level"));
+                    if (player.getFireTicks() > 0) effect(player, PotionEffectType.REGENERATION,
+                            settings.intValue(ability, "regeneration-level"), 12);
+                }
                 case WARD -> quietWardens(player);
-                case EYE -> updateEye(player);
+                case EYE -> { }
                 case SILENCE -> SilenceEffects.types().forEach(player::removePotionEffect);
                 case WAYFINDER -> effect(player, PotionEffectType.SPEED, settings.intValue(ability, "speed-level"));
                 case RAISER -> effect(player, PotionEffectType.JUMP_BOOST, settings.intValue(ability, "jump-boost-level"));
                 case SHAPER -> effect(player, PotionEffectType.HASTE, settings.intValue(ability, "haste-level"));
-                case HOST -> effect(player, PotionEffectType.HERO_OF_THE_VILLAGE, settings.intValue(ability, "hero-level"));
+                case HOST -> {
+                    effect(player, PotionEffectType.HERO_OF_THE_VILLAGE, settings.intValue(ability, "hero-level"));
+                    effect(player, PotionEffectType.LUCK, settings.intValue(ability, "luck-level"));
+                }
                 default -> { }
             }
         }
     }
 
     private void effect(Player player, PotionEffectType type, int level) {
+        effect(player, type, level, 30);
+    }
+
+    private void effect(Player player, PotionEffectType type, int level, int duration) {
         PotionEffect current = player.getPotionEffect(type);
         if (current != null && current.getAmplifier() > level - 1) return;
-        player.addPotionEffect(new PotionEffect(type, 30, level - 1, false, false, true), false);
+        player.addPotionEffect(new PotionEffect(type, duration, level - 1, false, false, true), false);
     }
 
     private void applyDune(Player player) {
@@ -156,7 +188,6 @@ public final class AbilityManager {
         long cooldown = Math.round(settings.value(TrimAbility.WILD, "cooldown-seconds") * 1000);
         if (System.currentTimeMillis() - lastWildJump.getOrDefault(id, 0L) < cooldown) return false;
         wildUsed.add(id);
-        wildLandingProtection.arm(id, Bukkit.getCurrentTick());
         lastWildJump.put(id, System.currentTimeMillis());
         player.setFlying(false);
         if (grantedFlight.remove(id)) player.setAllowFlight(false);
@@ -167,23 +198,30 @@ public final class AbilityManager {
         return true;
     }
 
-    public boolean consumeWildLandingProtection(Player player) {
-        return wildLandingProtection.consume(player.getUniqueId());
-    }
-
-    public void clearWildLandingProtection(Player player) {
-        wildLandingProtection.clear(player.getUniqueId());
+    public boolean ownsWildFlight(Player player) {
+        return grantedFlight.contains(player.getUniqueId());
     }
 
     private void updateEye(Player player) {
-        if (!player.isSneaking()) return;
-        double radius = settings.value(TrimAbility.EYE, "radius");
-        int duration = Math.max(1, (int) Math.round(settings.value(TrimAbility.EYE, "glow-seconds") * 20));
-        for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
-            if (nearby != player && player.canSee(nearby)) {
-                nearby.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, duration, 0, false, false, true), false);
-            }
+        long tick = Bukkit.getCurrentTick();
+        Player target = EyeTargeting.findTarget(player);
+        long stareTicks = Math.round(settings.value(TrimAbility.EYE, "stare-seconds") * 20);
+        if (eyeCharges.stare(player.getUniqueId(), target == null ? null : target.getUniqueId(), tick, stareTicks)) {
+            int duration = Math.max(1, (int) Math.round(settings.value(TrimAbility.EYE, "stare-effect-seconds") * 20));
+            target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, duration, 0, false, false, true), false);
+            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, duration,
+                    settings.intValue(TrimAbility.EYE, "slowness-level") - 1, false, false, true), false);
+            feedback(player, Sound.ENTITY_ENDER_EYE_LAUNCH, Particle.GLOW);
         }
+        long sneakTicks = Math.round(settings.value(TrimAbility.EYE, "sneak-seconds") * 20);
+        if (!eyeCharges.sneak(player.getUniqueId(), player.isSneaking(), tick, sneakTicks)) return;
+        double radius = settings.value(TrimAbility.EYE, "radius");
+        int duration = Math.max(1, (int) Math.round(settings.value(TrimAbility.EYE, "reveal-seconds") * 20));
+        for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
+            if (nearby != player && player.canSee(nearby))
+                nearby.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, duration, 0, false, false, true), false);
+        }
+        feedback(player, Sound.ENTITY_ENDER_EYE_LAUNCH, Particle.GLOW);
     }
 
     private void quietWardens(Player player) {
@@ -196,6 +234,11 @@ public final class AbilityManager {
     public void feedback(Player player, Sound sound, Particle particle) {
         if (settings.sounds()) player.playSound(player.getLocation(), sound, 0.7f, 1.15f);
         if (settings.particles()) player.getWorld().spawnParticle(particle, player.getLocation().add(0, 1, 0), 12, .35, .45, .35, .02);
+    }
+
+    public void boltTriggerFeedback(Player player) {
+        actionBar(player, Component.text("Bolt combo! ⚡"));
+        feedback(player, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, Particle.ELECTRIC_SPARK);
     }
 
     private void playActivationFeedback(Player player, TrimAbility ability) {
@@ -231,8 +274,10 @@ public final class AbilityManager {
         cleanup(player, active.remove(player.getUniqueId()));
         comboTracker.clear(player.getUniqueId());
         spireFallProtection.remove(player.getUniqueId());
-        wildLandingProtection.clear(player.getUniqueId());
+        eyeCharges.clear(player.getUniqueId());
     }
+
+    public void clearEye(Player player) { eyeCharges.clear(player.getUniqueId()); }
 
     private void cleanup(Player player, TrimAbility previous) {
         UUID id = player.getUniqueId();
@@ -244,6 +289,7 @@ public final class AbilityManager {
         wildUsed.remove(id);
         if (previous == TrimAbility.BOLT) comboTracker.clear(id);
         if (previous == TrimAbility.SPIRE) spireFallProtection.remove(id);
+        if (previous == TrimAbility.EYE) eyeCharges.clear(id);
     }
 
     private record ActivationFeedback(Sound sound, Particle particle) {}

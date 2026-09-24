@@ -35,23 +35,23 @@ In an ability screen, left/right click changes a number by its small step and sh
 ## Abilities
 
 - **Tide:** Dolphin's Grace and Resistance in water.
-- **Coast:** Luck.
+- **Coast:** A 30% default speed boost to the living mount you ride, with separate in-game controls for land mounts, nautiluses, and happy ghasts. Boats and minecarts are unaffected.
 - **Dune:** Knockback resistance.
-- **Wild:** One flight-key double jump per airborne cycle with protected landing.
+- **Wild:** One flight-key double jump per airborne cycle; no fall damage while the full set is active.
 - **Sentry:** Player-shot damaging projectiles deal 1.3x damage.
 - **Snout:** Hostile mobs ignore the wearer until the wearer, their projectile, or their pet attacks that mob.
-- **Bolt:** A 10-hit timed melee combo calls non-incendiary, vanilla-typed lightning for 16 damage.
+- **Bolt:** A 10-hit timed melee combo adds 10 raw damage to the triggering hit and calls visual-only lightning.
 - **Flow:** A disabled shield repels nearby living entities.
-- **Rib:** Fire Resistance.
+- **Rib:** Fire Resistance and Regeneration I while burning.
 - **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
 - **Vex:** A used totem grants Strength and Speed for 90 seconds by default.
 - **Spire:** Void falls wrap to world height and the resulting fall damage is cancelled.
-- **Eye:** Sneaking makes visible nearby players glow.
+- **Eye:** Stare at a visible player for 5 seconds to give them Glowing and Slowness I for 15 seconds. Sneak for 5 seconds to reveal nearby players for 10 seconds, once per sneak.
 - **Silence:** Blocks the configured list of negative effects, including Instant Damage.
 - **Wayfinder:** Speed II.
 - **Raiser:** Jump Boost.
 - **Shaper:** Haste II.
-- **Host:** Hero of the Village V.
+- **Host:** Hero of the Village V and Luck I.
 
 ## Verification
 
