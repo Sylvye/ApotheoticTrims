@@ -42,7 +42,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Snout:** Hostile mobs ignore the wearer until the wearer, their projectile, or their pet attacks that mob.
 - **Bolt:** A 10-hit timed melee combo adds 10 raw damage to the triggering hit and calls visual-only lightning.
 - **Flow:** A disabled shield repels nearby living entities.
-- **Rib:** Fire Resistance and Regeneration I while burning.
+- **Rib:** Immune to fire damage, including lava, magma blocks, and campfires; Regeneration I by default while burning.
 - **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
 - **Vex:** A used totem grants Strength and Speed for 90 seconds by default.
 - **Spire:** Void falls wrap to world height and the resulting fall damage is cancelled.

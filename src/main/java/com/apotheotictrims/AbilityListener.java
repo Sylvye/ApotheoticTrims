@@ -149,7 +149,18 @@ public final class AbilityListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEnvironmentalDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
-        if (event.getCause() == EntityDamageEvent.DamageCause.VOID && abilities.has(player, TrimAbility.SPIRE)) {
+        boolean fireDamage = switch (event.getCause()) {
+            case FIRE, FIRE_TICK, LAVA, HOT_FLOOR, CAMPFIRE -> true;
+            case CONTACT -> event instanceof EntityDamageByBlockEvent blockEvent
+                    && blockEvent.getDamager() != null
+                    && (blockEvent.getDamager().getType() == Material.MAGMA_BLOCK
+                    || blockEvent.getDamager().getType() == Material.CAMPFIRE
+                    || blockEvent.getDamager().getType() == Material.SOUL_CAMPFIRE);
+            default -> false;
+        };
+        if (fireDamage && abilities.has(player, TrimAbility.RIB)) {
+            event.setCancelled(true);
+        } else if (event.getCause() == EntityDamageEvent.DamageCause.VOID && abilities.has(player, TrimAbility.SPIRE)) {
             event.setCancelled(true);
             wrapFromVoid(player);
         } else if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {

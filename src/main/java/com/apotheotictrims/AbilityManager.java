@@ -121,9 +121,14 @@ public final class AbilityManager {
                 case DUNE -> applyDune(player);
                 case WILD -> { }
                 case RIB -> {
-                    effect(player, PotionEffectType.FIRE_RESISTANCE, settings.intValue(ability, "fire-resistance-level"));
-                    if (player.getFireTicks() > 0) effect(player, PotionEffectType.REGENERATION,
-                            settings.intValue(ability, "regeneration-level"), 12);
+                    if (player.getFireTicks() > 0) {
+                        int level = settings.intValue(ability, "regeneration-level");
+                        PotionEffect current = player.getPotionEffect(PotionEffectType.REGENERATION);
+                        if (regenerationNeedsRefresh(current, level)) {
+                            player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION,
+                                    60, level - 1, false, false, true), false);
+                        }
+                    }
                 }
                 case WARD -> quietWardens(player);
                 case EYE -> { }
@@ -148,6 +153,11 @@ public final class AbilityManager {
         PotionEffect current = player.getPotionEffect(type);
         if (current != null && current.getAmplifier() > level - 1) return;
         player.addPotionEffect(new PotionEffect(type, duration, level - 1, false, false, true), false);
+    }
+
+    static boolean regenerationNeedsRefresh(PotionEffect current, int level) {
+        return current == null || current.getAmplifier() < level - 1
+                || current.getAmplifier() == level - 1 && current.getDuration() <= 10;
     }
 
     private void applyDune(Player player) {

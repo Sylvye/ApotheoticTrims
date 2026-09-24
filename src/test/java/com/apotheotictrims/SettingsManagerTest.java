@@ -13,6 +13,48 @@ class SettingsManagerTest {
     @TempDir Path directory;
 
     @Test
+    void restoresRibRegenerationDefaultAndPreservesHigherCustomLevel() throws Exception {
+        Files.writeString(directory.resolve("settings.yml"), """
+                schema-version: 7
+                abilities:
+                  rib:
+                    values:
+                      regeneration-level: 1
+                      fire-resistance-level: 1
+                """);
+        SettingsManager defaults = new SettingsManager(directory, Logger.getAnonymousLogger());
+        defaults.load();
+        assertEquals(1, defaults.intValue(TrimAbility.RIB, "regeneration-level"));
+        String saved = Files.readString(directory.resolve("settings.yml"));
+        assertTrue(saved.contains("schema-version: 9"));
+        assertFalse(saved.contains("fire-resistance-level"));
+
+        Path custom = Files.createDirectory(directory.resolve("custom-rib"));
+        Files.writeString(custom.resolve("settings.yml"), """
+                schema-version: 7
+                abilities:
+                  rib:
+                    values:
+                      regeneration-level: 3
+                """);
+        SettingsManager customized = new SettingsManager(custom, Logger.getAnonymousLogger());
+        customized.load();
+        assertEquals(3, customized.intValue(TrimAbility.RIB, "regeneration-level"));
+
+        Path previousDefault = Files.createDirectory(directory.resolve("previous-default"));
+        Files.writeString(previousDefault.resolve("settings.yml"), """
+                schema-version: 8
+                abilities:
+                  rib:
+                    values:
+                      regeneration-level: 2
+                """);
+        SettingsManager upgraded = new SettingsManager(previousDefault, Logger.getAnonymousLogger());
+        upgraded.load();
+        assertEquals(1, upgraded.intValue(TrimAbility.RIB, "regeneration-level"));
+    }
+
+    @Test
     void persistsValuesTogglesFeedbackAndResets() {
         SettingsManager first = new SettingsManager(directory, Logger.getAnonymousLogger());
         first.load();
@@ -35,6 +77,7 @@ class SettingsManagerTest {
         assertEquals(5, second.intValue(TrimAbility.HOST, "hero-level"));
         assertEquals(1, second.intValue(TrimAbility.HOST, "luck-level"));
         assertEquals(1, second.intValue(TrimAbility.RIB, "regeneration-level"));
+        assertTrue(TrimAbility.RIB.setting("fire-resistance-level").isEmpty());
         for (CoastMountCategory category : CoastMountCategory.values())
             assertEquals(1.3, second.value(TrimAbility.COAST, category.settingKey()));
         assertEquals(5, second.value(TrimAbility.EYE, "stare-seconds"));
@@ -62,7 +105,7 @@ class SettingsManagerTest {
         migrated.load();
         assertEquals(10, migrated.value(TrimAbility.BOLT, "bonus-damage"));
         assertEquals(90, migrated.value(TrimAbility.VEX, "duration-seconds"));
-        assertTrue(Files.readString(directory.resolve("settings.yml")).contains("schema-version: 7"));
+        assertTrue(Files.readString(directory.resolve("settings.yml")).contains("schema-version: 9"));
 
         Path custom = Files.createDirectory(directory.resolve("custom"));
         Files.writeString(custom.resolve("settings.yml"), """
@@ -105,7 +148,7 @@ class SettingsManagerTest {
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("glow-seconds"));
         assertFalse(saved.contains("luck-level: 4"));
-        assertTrue(saved.contains("schema-version: 7"));
+        assertTrue(saved.contains("schema-version: 9"));
     }
 
     @Test
@@ -137,7 +180,7 @@ class SettingsManagerTest {
         assertEquals(1.8, settings.value(TrimAbility.COAST, "nautilus-multiplier"));
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("zombie-nautilus-multiplier"));
-        assertTrue(saved.contains("schema-version: 7"));
+        assertTrue(saved.contains("schema-version: 9"));
     }
 
     @Test
@@ -161,7 +204,7 @@ class SettingsManagerTest {
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("boat-multiplier"));
         assertFalse(saved.contains("minecart-multiplier"));
-        assertTrue(saved.contains("schema-version: 7"));
+        assertTrue(saved.contains("schema-version: 9"));
     }
 
     @Test
@@ -179,7 +222,7 @@ class SettingsManagerTest {
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("lightning-damage"));
         assertTrue(saved.contains("bonus-damage: 10"));
-        assertTrue(saved.contains("schema-version: 7"));
+        assertTrue(saved.contains("schema-version: 9"));
 
         Path custom = Files.createDirectory(directory.resolve("custom-bolt"));
         Files.writeString(custom.resolve("settings.yml"), """

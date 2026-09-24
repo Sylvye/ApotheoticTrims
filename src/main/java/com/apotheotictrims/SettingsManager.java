@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 public final class SettingsManager {
-    public static final int SCHEMA_VERSION = 7;
+    public static final int SCHEMA_VERSION = 9;
     private final Path dataDirectory;
     private final Logger logger;
     private final Map<TrimAbility, Boolean> enabled = new EnumMap<>(TrimAbility.class);
@@ -59,6 +59,8 @@ public final class SettingsManager {
         if (loadedSchema < 5) migrated = true;
         if (loadedSchema < 6) migrated = true;
         if (loadedSchema < 7) { migrateVersionSeven(yaml, loadedSchema); migrated = true; }
+        if (loadedSchema < 8) migrated = true;
+        if (loadedSchema < 9) { migrateVersionNine(); migrated = true; }
         if (migrated) save();
     }
 
@@ -213,5 +215,10 @@ public final class SettingsManager {
         } catch (IllegalArgumentException ex) {
             logger.warning("Invalid saved Bolt lightning damage; using the new bonus default.");
         }
+    }
+
+    private void migrateVersionNine() {
+        Map<String, Double> rib = values.get(TrimAbility.RIB);
+        if (Double.compare(rib.get("regeneration-level"), 2.0) == 0) rib.put("regeneration-level", 1.0);
     }
 }
