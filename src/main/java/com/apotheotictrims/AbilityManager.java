@@ -112,7 +112,12 @@ public final class AbilityManager {
             if (ability == null) continue;
             switch (ability) {
                 case TIDE -> {
-                    if (player.isInWater() || player.getLocation().getBlock().getType() == Material.BUBBLE_COLUMN) {
+                    Location location = player.getLocation();
+                    boolean inRain = location.getWorld().hasStorm()
+                            && location.getWorld().isClearWeather() == false
+                            && location.getBlock().getLightFromSky() > 0
+                            && location.getWorld().getHighestBlockYAt(location) <= location.getBlockY();
+                    if (player.isInWater() || location.getBlock().getType() == Material.BUBBLE_COLUMN || inRain) {
                         effect(player, PotionEffectType.DOLPHINS_GRACE, settings.intValue(ability, "dolphins-grace-level"));
                         effect(player, PotionEffectType.RESISTANCE, settings.intValue(ability, "resistance-level"));
                     }
