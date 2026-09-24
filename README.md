@@ -44,9 +44,9 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Flow:** A disabled shield violently repels nearby living entities.
 - **Rib:** Immune to fire damage, including lava, magma blocks, and campfires; Regeneration I is given while burning.
 - **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
-- **Vex:** Totem pops grant Strength II and Speed II for 90 seconds.
+- **Vex:** Totem pops grant Strength II and Speed II for 90 seconds and extend the totem's Fire Resistance from 40 to 90 seconds by default. The Fire Resistance duration can be changed separately in the Vex settings.
 - **Spire:** Slow Falling while sneaking in the air. Void falls wrap to world height and the resulting fall damage is cancelled.
-- **Eye:** Stare at a visible player's hitbox to give them Weakness I and Glowing while you keep staring. Hold sneak while staring to add Slowness I. Sparse Glow particles appear around the target for everyone.
+- **Eye:** Stare at a visible player's hitbox to give them Weakness and Glowing while you keep staring. Hold sneak while staring to add Slowness. Weakness and Slowness levels and Glowing are configurable. Sparse Glow particles appear around the target for everyone.
 - **Silence:** Blocks all negative effects, including Instant Damage.
 - **Wayfinder:** Speed II.
 - **Raiser:** Jump Boost II and double step height (0.6 -> 1.2).

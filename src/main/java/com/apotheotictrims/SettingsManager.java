@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 public final class SettingsManager {
-    public static final int SCHEMA_VERSION = 10;
+    public static final int SCHEMA_VERSION = 12;
     private final Path dataDirectory;
     private final Logger logger;
     private final Map<TrimAbility, Boolean> enabled = new EnumMap<>(TrimAbility.class);
@@ -62,6 +62,8 @@ public final class SettingsManager {
         if (loadedSchema < 8) migrated = true;
         if (loadedSchema < 9) { migrateVersionNine(); migrated = true; }
         if (loadedSchema < 10) migrated = true;
+        if (loadedSchema < 11) migrated = true;
+        if (loadedSchema < 12) migrated = true;
         if (migrated) save();
     }
 

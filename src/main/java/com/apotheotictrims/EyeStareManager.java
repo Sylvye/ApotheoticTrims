@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.EnumSet;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -13,15 +13,17 @@ import java.util.UUID;
 
 final class EyeStareManager {
     private static final int EFFECT_TICKS = 10;
+    private final SettingsManager settings;
     private final EyeEffects effects;
     private final Map<UUID, Player> viewerTargets = new HashMap<>();
     private final Map<UUID, TargetState> targets = new HashMap<>();
 
-    EyeStareManager() {
-        this(new PotionEyeEffects());
+    EyeStareManager(SettingsManager settings) {
+        this(settings, new PotionEyeEffects());
     }
 
-    EyeStareManager(EyeEffects effects) {
+    EyeStareManager(SettingsManager settings, EyeEffects effects) {
+        this.settings = settings;
         this.effects = effects;
     }
 
@@ -35,8 +37,10 @@ final class EyeStareManager {
         if (target == null) return;
         TargetState state = targets.computeIfAbsent(target.getUniqueId(), ignored -> new TargetState(target));
         state.viewers.put(viewerId, viewer.isSneaking());
-        refresh(state, EyeEffect.WEAKNESS);
-        refresh(state, EyeEffect.GLOWING);
+        refresh(state, EyeEffect.WEAKNESS, settings.intValue(TrimAbility.EYE, "weakness-level"));
+        if (settings.intValue(TrimAbility.EYE, "glowing-enabled") == 1)
+            refresh(state, EyeEffect.GLOWING, 1);
+        else release(state, EyeEffect.GLOWING);
         updateSlowness(state);
         if (particles && state.viewers.keySet().iterator().next().equals(viewerId))
             target.getWorld().spawnParticle(Particle.GLOW, target.getLocation().add(0, 1, 0),
@@ -58,17 +62,19 @@ final class EyeStareManager {
         for (UUID viewerId : Set.copyOf(viewerTargets.keySet())) stopViewing(viewerId);
     }
 
-    private void refresh(TargetState state, EyeEffect effect) {
-        if (effects.refresh(state.target, effect)) state.owned.add(effect);
+    private void refresh(TargetState state, EyeEffect effect, int level) {
+        if (effects.refresh(state.target, effect, level)) state.owned.put(effect, level);
     }
 
     private void updateSlowness(TargetState state) {
-        if (state.viewers.containsValue(true)) refresh(state, EyeEffect.SLOWNESS);
+        if (state.viewers.containsValue(true))
+            refresh(state, EyeEffect.SLOWNESS, settings.intValue(TrimAbility.EYE, "slowness-level"));
         else release(state, EyeEffect.SLOWNESS);
     }
 
     private void release(TargetState state, EyeEffect effect) {
-        if (state.owned.remove(effect)) effects.clear(state.target, effect);
+        Integer level = state.owned.remove(effect);
+        if (level != null) effects.clear(state.target, effect, level);
     }
 
     private void stopViewing(UUID viewerId) {
@@ -86,30 +92,32 @@ final class EyeStareManager {
     enum EyeEffect { WEAKNESS, GLOWING, SLOWNESS }
 
     interface EyeEffects {
-        boolean refresh(Player target, EyeEffect effect);
-        void clear(Player target, EyeEffect effect);
+        boolean refresh(Player target, EyeEffect effect, int level);
+        void clear(Player target, EyeEffect effect, int level);
     }
 
     private static final class TargetState {
         final Player target;
         final Map<UUID, Boolean> viewers = new HashMap<>();
-        final EnumSet<EyeEffect> owned = EnumSet.noneOf(EyeEffect.class);
+        final Map<EyeEffect, Integer> owned = new EnumMap<>(EyeEffect.class);
 
         TargetState(Player target) { this.target = target; }
     }
 
     private static final class PotionEyeEffects implements EyeEffects {
-        @Override public boolean refresh(Player target, EyeEffect effect) {
+        @Override public boolean refresh(Player target, EyeEffect effect, int level) {
             PotionEffectType type = type(effect);
             PotionEffect current = target.getPotionEffect(type);
-            if (current != null && !replaceable(current)) return false;
-            return target.addPotionEffect(new PotionEffect(type, EFFECT_TICKS, 0, false, false, true), false);
+            if (current != null && !replaceable(current, level)) return false;
+            return target.addPotionEffect(new PotionEffect(type, EFFECT_TICKS, level - 1,
+                    false, false, true), false);
         }
 
-        @Override public void clear(Player target, EyeEffect effect) {
+        @Override public void clear(Player target, EyeEffect effect, int level) {
             PotionEffectType type = type(effect);
             PotionEffect current = target.getPotionEffect(type);
-            if (current != null && replaceable(current)) target.removePotionEffect(type);
+            if (current != null && current.getAmplifier() == level - 1
+                    && current.getDuration() <= EFFECT_TICKS) target.removePotionEffect(type);
         }
 
         private PotionEffectType type(EyeEffect effect) {
@@ -120,8 +128,8 @@ final class EyeStareManager {
             };
         }
 
-        private boolean replaceable(PotionEffect effect) {
-            return effect.getAmplifier() == 0 && effect.getDuration() <= EFFECT_TICKS;
+        private boolean replaceable(PotionEffect effect, int level) {
+            return effect.getAmplifier() <= level - 1 && effect.getDuration() <= EFFECT_TICKS;
         }
     }
 }

@@ -25,7 +25,7 @@ public final class AbilityManager {
     private final Map<UUID, Long> lastWildJump = new HashMap<>();
     private final Set<UUID> spireFallProtection = new HashSet<>();
     private final Set<UUID> spireSlowFalling = new HashSet<>();
-    private final EyeStareManager eyeStares = new EyeStareManager();
+    private final EyeStareManager eyeStares;
     private final CoastMountManager coastMounts;
     private final NamespacedKey duneModifierKey;
     private final NamespacedKey raiserModifierKey;
@@ -38,6 +38,7 @@ public final class AbilityManager {
     public AbilityManager(ApotheoticTrimsPlugin plugin, SettingsManager settings) {
         this.plugin = plugin;
         this.settings = settings;
+        this.eyeStares = new EyeStareManager(settings);
         this.duneModifierKey = new NamespacedKey(plugin, "dune_knockback_resistance");
         this.raiserModifierKey = new NamespacedKey(plugin, "raiser_step_height");
         this.coastMounts = new CoastMountManager(plugin, settings);

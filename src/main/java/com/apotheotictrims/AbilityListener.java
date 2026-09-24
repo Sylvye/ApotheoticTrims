@@ -142,6 +142,10 @@ public final class AbilityListener implements Listener {
                     settings.intValue(TrimAbility.VEX, "strength-level") - 1, false, true, true), true);
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration,
                     settings.intValue(TrimAbility.VEX, "speed-level") - 1, false, true, true), true);
+            int fireResistanceDuration = Math.max(1, (int) Math.round(
+                    settings.value(TrimAbility.VEX, "fire-resistance-duration-seconds") * 20));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, fireResistanceDuration,
+                    0, false, true, true), true);
             abilities.feedback(player, Sound.ITEM_TOTEM_USE, Particle.TOTEM_OF_UNDYING);
         });
     }
