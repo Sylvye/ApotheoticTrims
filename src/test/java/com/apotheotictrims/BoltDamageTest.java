@@ -14,10 +14,39 @@ import org.mockito.MockedStatic;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class BoltDamageTest {
+    @Test
+    void switchingTargetsWithinTenTicksCountsOnce() {
+        SettingsManager settings = mock(SettingsManager.class);
+        AbilityManager abilities = mock(AbilityManager.class);
+        ComboTracker combos = new ComboTracker();
+        when(abilities.combos()).thenReturn(combos);
+        when(settings.intValue(TrimAbility.BOLT, "combo-hits")).thenReturn(2);
+        when(settings.value(TrimAbility.BOLT, "timeout-seconds")).thenReturn(5.0);
+        Player attacker = mock(Player.class);
+        UUID playerId = UUID.randomUUID();
+        when(attacker.getUniqueId()).thenReturn(playerId);
+        when(abilities.has(attacker, TrimAbility.BOLT)).thenReturn(true);
+        DamageSource source = mock(DamageSource.class);
+        when(source.getCausingEntity()).thenReturn(attacker);
+        AbilityListener listener = new AbilityListener(mock(ApotheoticTrimsPlugin.class), settings, abilities);
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getCurrentTick).thenReturn(100, 109);
+            listener.onDamage(hit(mock(LivingEntity.class), attacker, source));
+            EntityDamageByEntityEvent second = hit(mock(LivingEntity.class), attacker, source);
+            listener.onDamage(second);
+
+            assertEquals(1, combos.count(playerId));
+            verify(second, never()).setDamage(anyDouble());
+            verify(abilities, never()).boltTriggerFeedback(attacker);
+        }
+    }
+
     @Test
     void addsBonusToTriggeringHitWithoutDamagingAgain() {
         ApotheoticTrimsPlugin plugin = mock(ApotheoticTrimsPlugin.class);
@@ -45,6 +74,7 @@ class BoltDamageTest {
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
             bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            bukkit.when(Bukkit::getCurrentTick).thenReturn(0, 10);
             EntityDamageByEntityEvent defaultHit = hit(target, attacker, source);
             listener.onDamage(defaultHit);
             verify(defaultHit).setDamage(24.0);

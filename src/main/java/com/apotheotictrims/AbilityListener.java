@@ -62,7 +62,8 @@ public final class AbilityListener implements Listener {
                 && abilities.has(player, TrimAbility.BOLT)) {
             int threshold = settings.intValue(TrimAbility.BOLT, "combo-hits");
             long timeout = Math.round(settings.value(TrimAbility.BOLT, "timeout-seconds") * 1000);
-            ComboTracker.Result result = abilities.combos().hit(player.getUniqueId(), System.currentTimeMillis(), threshold, timeout);
+            ComboTracker.Result result = abilities.combos().hit(player.getUniqueId(), System.currentTimeMillis(),
+                    Bukkit.getCurrentTick(), threshold, timeout);
             if (result.triggered()) {
                 event.setDamage(event.getDamage() + settings.value(TrimAbility.BOLT, "bonus-damage"));
                 abilities.boltTriggerFeedback(player);
