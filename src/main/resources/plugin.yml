@@ -2,7 +2,7 @@ name: ApotheoticTrims
 version: '${version}'
 main: com.apotheotictrims.ApotheoticTrimsPlugin
 description: Full armor trim sets grant configurable special abilities.
-author: ApotheoticTrims
+author: Sylvye
 api-version: '26.2'
 commands:
   trims:
