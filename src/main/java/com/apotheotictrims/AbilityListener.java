@@ -116,6 +116,7 @@ public final class AbilityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onShieldDisabled(PlayerShieldDisableEvent event) {
+        if (event.isCancelled()) return;
         Player player = event.getPlayer();
         if (!abilities.has(player, TrimAbility.FLOW)) return;
         Bukkit.getScheduler().runTask(plugin, () -> {
@@ -128,8 +129,12 @@ public final class AbilityListener implements Listener {
                 away.setY(0);
                 if (away.lengthSquared() < .0001) away = new Vector(1, 0, 0);
                 entity.setVelocity(away.normalize().multiply(horizontal).setY(vertical));
+                if (entity instanceof Player target) {
+                    target.setCooldown(Material.WIND_CHARGE, Math.max(100, target.getCooldown(Material.WIND_CHARGE)));
+                    target.setCooldown(Material.ENDER_PEARL, Math.max(100, target.getCooldown(Material.ENDER_PEARL)));
+                }
             }
-            abilities.feedback(player, Sound.ENTITY_WIND_CHARGE_WIND_BURST, Particle.GUST);
+            abilities.flowTriggerFeedback(player);
         });
     }
 

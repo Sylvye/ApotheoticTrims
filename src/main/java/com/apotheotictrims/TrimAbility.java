@@ -27,7 +27,7 @@ public enum TrimAbility {
             integer("combo-hits", "Combo hits", 10, 1, 1000, 1, 10),
             decimal("timeout-seconds", "Timeout seconds", 5, .1, 600, .5, 5),
             decimal("bonus-damage", "Bonus damage", 10, 0, 100, .5, 2)),
-    FLOW("Flow", Material.FLOW_ARMOR_TRIM_SMITHING_TEMPLATE, "A disabled shield violently repels nearby entities",
+    FLOW("Flow", Material.FLOW_ARMOR_TRIM_SMITHING_TEMPLATE, "A disabled shield repels nearby entities and disables hit players' wind charges and ender pearls for 5 seconds",
             decimal("radius", "Radius", 6, 0, 64, .5, 2),
             decimal("horizontal-velocity", "Horizontal velocity", 2, 0, 10, .1, .5),
             decimal("vertical-velocity", "Vertical velocity", .7, 0, 10, .05, .25)),

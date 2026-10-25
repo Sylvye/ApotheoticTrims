@@ -284,6 +284,10 @@ public final class AbilityManager {
         if (settings.particles()) player.getWorld().spawnParticle(particle, player.getLocation().add(0, 1, 0), 12, .35, .45, .35, .02);
     }
 
+    public void flowTriggerFeedback(Player player) {
+        feedback(player, Sound.ENTITY_WIND_CHARGE_WIND_BURST, Particle.GUST);
+    }
+
     public void boltTriggerFeedback(Player player) {
         actionBar(player, Component.text("Bolt combo! ⚡"));
         feedback(player, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, Particle.ELECTRIC_SPARK);

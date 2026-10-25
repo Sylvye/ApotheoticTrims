@@ -41,7 +41,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Sentry:** Player-shot damaging projectiles deal 1.3x damage.
 - **Snout:** Hostile mobs ignore the wearer until that mob is hit with an attack attributed to that player.
 - **Bolt:** A 10-hit timed melee combo adds 10 raw damage to the triggering hit and calls visual-only lightning.
-- **Flow:** A disabled shield violently repels nearby living entities.
+- **Flow:** A disabled shield violently repels nearby living entities and disables hit players' wind charges and ender pearls for 5 seconds. Repeated blasts refresh this duration without shortening longer cooldowns. Already-thrown projectiles are unaffected.
 - **Rib:** Immune to fire damage, including lava, magma blocks, and campfires; Regeneration I is given while burning.
 - **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
 - **Vex:** Totem pops grant Strength II and Speed II for 90 seconds and extend the totem's Fire Resistance from 40 to 90 seconds by default. The Fire Resistance duration can be changed separately in the Vex settings.
@@ -55,4 +55,4 @@ In an ability screen, left/right click changes a number by its small step and sh
 
 ## Verification
 
-Run `./gradlew test`. Before deploying broadly, verify on a test Paper server: each full set and mixed-set deactivation; Ward with sensors, shriekers, and a Warden; Wild in survival and creative; Flow after an axe shield disable; Silence with commands, splash/lingering potions, and tipped arrows; and multiplayer Snout/Eye behavior.
+Run `./gradlew test`. Before deploying broadly, verify on a test Paper server: each full set and mixed-set deactivation; Ward with sensors, shriekers, and a Warden; Wild in survival and creative; Flow after an axe shield disable, including affected players being unable to use wind charges and ender pearls for 5 seconds and regaining use afterward; Silence with commands, splash/lingering potions, and tipped arrows; and multiplayer Snout/Eye behavior.
