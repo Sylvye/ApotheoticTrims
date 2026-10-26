@@ -47,7 +47,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Vex:** Totem pops grant Strength II and Speed II for 90 seconds and extend the totem's Fire Resistance from 40 to 90 seconds by default. The Fire Resistance duration can be changed separately in the Vex settings.
 - **Spire:** Slow Falling while sneaking in the air. Void falls wrap to world height and the resulting fall damage is cancelled.
 - **Eye:** Stare at a visible player's hitbox to give them Weakness and Glowing while you keep staring. Hold sneak while staring to add Slowness. Weakness and Slowness levels and Glowing are configurable. Sparse Glow particles appear around the target for everyone.
-- **Silence:** Blocks all negative effects, including Instant Damage.
+- **Silence:** Hold sneak for 15 seconds (configurable) to hide your body, armor, and held items while showing invisibility particles. Charging shows smoke particles and action-bar progress. Releasing sneak or taking damage attributed to another player (including their projectiles and pets) reveals you and resets the charge. Keeping sneak held starts charging again immediately. Attacking, mob damage, and environmental damage do not reset it. Negative effects apply normally.
 - **Wayfinder:** Speed II.
 - **Raiser:** Jump Boost II and double step height (0.6 -> 1.2).
 - **Shaper:** Haste II.
@@ -55,4 +55,4 @@ In an ability screen, left/right click changes a number by its small step and sh
 
 ## Verification
 
-Run `./gradlew test`. Before deploying broadly, verify on a test Paper server: each full set and mixed-set deactivation; Ward with sensors, shriekers, and a Warden; Wild in survival and creative; Flow after an axe shield disable, including affected players being unable to use wind charges and ender pearls for 5 seconds and regaining use afterward; Silence with commands, splash/lingering potions, and tipped arrows; and multiplayer Snout/Eye behavior.
+Run `./gradlew test`. Before deploying broadly, verify on a test Paper server: each full set and mixed-set deactivation; Ward with sensors, shriekers, and a Warden; Wild in survival and creative; Flow after an axe shield disable, including affected players being unable to use wind charges and ender pearls for 5 seconds and regaining use afterward; Silence charging, sneak release, player/projectile/pet damage resets, equipment changes, new viewers, normal negative effects, and visibility restoration; and multiplayer Snout/Eye behavior.

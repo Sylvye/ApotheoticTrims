@@ -13,6 +13,25 @@ class SettingsManagerTest {
     @TempDir Path directory;
 
     @Test
+    void addsSilenceChargeSettingAndPersistsCustomDuration() throws Exception {
+        Files.writeString(directory.resolve("settings.yml"), """
+                schema-version: 12
+                abilities:
+                  silence:
+                    enabled: false
+                """);
+        SettingsManager settings = new SettingsManager(directory, Logger.getAnonymousLogger());
+        settings.load();
+        assertEquals(15, settings.value(TrimAbility.SILENCE, "charge-seconds"));
+        assertFalse(settings.enabled(TrimAbility.SILENCE));
+        assertTrue(Files.readString(directory.resolve("settings.yml")).contains("charge-seconds: 15"));
+        settings.setValue(TrimAbility.SILENCE, "charge-seconds", 7.5);
+        SettingsManager reloaded = new SettingsManager(directory, Logger.getAnonymousLogger());
+        reloaded.load();
+        assertEquals(7.5, reloaded.value(TrimAbility.SILENCE, "charge-seconds"));
+    }
+
+    @Test
     void restoresRibRegenerationDefaultAndPreservesHigherCustomLevel() throws Exception {
         Files.writeString(directory.resolve("settings.yml"), """
                 schema-version: 7
@@ -26,7 +45,7 @@ class SettingsManagerTest {
         defaults.load();
         assertEquals(1, defaults.intValue(TrimAbility.RIB, "regeneration-level"));
         String saved = Files.readString(directory.resolve("settings.yml"));
-        assertTrue(saved.contains("schema-version: 12"));
+        assertTrue(saved.contains("schema-version: 13"));
         assertFalse(saved.contains("fire-resistance-level"));
 
         Path custom = Files.createDirectory(directory.resolve("custom-rib"));
@@ -113,7 +132,7 @@ class SettingsManagerTest {
         assertEquals(1, settings.intValue(TrimAbility.EYE, "slowness-level"));
         assertEquals(1, settings.intValue(TrimAbility.EYE, "glowing-enabled"));
         String saved = Files.readString(directory.resolve("settings.yml"));
-        assertTrue(saved.contains("schema-version: 12"));
+        assertTrue(saved.contains("schema-version: 13"));
         assertTrue(saved.contains("weakness-level: 1.0"));
     }
 
@@ -158,7 +177,7 @@ class SettingsManagerTest {
         migrated.load();
         assertEquals(10, migrated.value(TrimAbility.BOLT, "bonus-damage"));
         assertEquals(90, migrated.value(TrimAbility.VEX, "duration-seconds"));
-        assertTrue(Files.readString(directory.resolve("settings.yml")).contains("schema-version: 12"));
+        assertTrue(Files.readString(directory.resolve("settings.yml")).contains("schema-version: 13"));
 
         Path custom = Files.createDirectory(directory.resolve("custom"));
         Files.writeString(custom.resolve("settings.yml"), """
@@ -202,7 +221,7 @@ class SettingsManagerTest {
         assertFalse(saved.contains("radius: 22"));
         assertFalse(saved.contains("reveal-seconds"));
         assertFalse(saved.contains("luck-level: 4"));
-        assertTrue(saved.contains("schema-version: 12"));
+        assertTrue(saved.contains("schema-version: 13"));
     }
 
     @Test
@@ -235,7 +254,7 @@ class SettingsManagerTest {
         assertEquals(1.8, settings.value(TrimAbility.COAST, "nautilus-multiplier"));
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("zombie-nautilus-multiplier"));
-        assertTrue(saved.contains("schema-version: 12"));
+        assertTrue(saved.contains("schema-version: 13"));
     }
 
     @Test
@@ -259,7 +278,7 @@ class SettingsManagerTest {
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("boat-multiplier"));
         assertFalse(saved.contains("minecart-multiplier"));
-        assertTrue(saved.contains("schema-version: 12"));
+        assertTrue(saved.contains("schema-version: 13"));
     }
 
     @Test
@@ -277,7 +296,7 @@ class SettingsManagerTest {
         String saved = Files.readString(directory.resolve("settings.yml"));
         assertFalse(saved.contains("lightning-damage"));
         assertTrue(saved.contains("bonus-damage: 10"));
-        assertTrue(saved.contains("schema-version: 12"));
+        assertTrue(saved.contains("schema-version: 13"));
 
         Path custom = Files.createDirectory(directory.resolve("custom-bolt"));
         Files.writeString(custom.resolve("settings.yml"), """

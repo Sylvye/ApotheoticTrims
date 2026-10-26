@@ -26,6 +26,7 @@ public final class AbilityManager {
     private final Set<UUID> spireFallProtection = new HashSet<>();
     private final Set<UUID> spireSlowFalling = new HashSet<>();
     private final EyeStareManager eyeStares;
+    private final SilenceManager silence;
     private final CoastMountManager coastMounts;
     private final NamespacedKey duneModifierKey;
     private final NamespacedKey raiserModifierKey;
@@ -34,11 +35,13 @@ public final class AbilityManager {
     private BukkitTask coastTask;
     private BukkitTask eyeTask;
     private BukkitTask spireTask;
+    private BukkitTask silenceTask;
 
     public AbilityManager(ApotheoticTrimsPlugin plugin, SettingsManager settings) {
         this.plugin = plugin;
         this.settings = settings;
         this.eyeStares = new EyeStareManager(settings);
+        this.silence = new SilenceManager(settings);
         this.duneModifierKey = new NamespacedKey(plugin, "dune_knockback_resistance");
         this.raiserModifierKey = new NamespacedKey(plugin, "raiser_step_height");
         this.coastMounts = new CoastMountManager(plugin, settings);
@@ -59,10 +62,15 @@ public final class AbilityManager {
                 else eyeStares.clearViewer(player);
             }
         }, 1L, 5L);
+        silenceTask = Bukkit.getScheduler().runTaskTimer(plugin, () ->
+                silence.tick(Bukkit.getOnlinePlayers(), player -> has(player, TrimAbility.SILENCE)
+                        && detector.detect(player).orElse(null) == TrimAbility.SILENCE), 1L, 1L);
         spireTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) updateSpire(player);
         }, 1L, 1L);
     }
+
+    public SilenceManager silence() { return silence; }
 
     public void stop() {
         if (task != null) task.cancel();
@@ -70,6 +78,8 @@ public final class AbilityManager {
         if (coastTask != null) coastTask.cancel();
         if (eyeTask != null) eyeTask.cancel();
         if (spireTask != null) spireTask.cancel();
+        if (silenceTask != null) silenceTask.cancel();
+        silence.clear();
         for (Player player : Bukkit.getOnlinePlayers()) cleanup(player, active.get(player.getUniqueId()));
         active.clear();
         comboTracker.clear();
@@ -148,7 +158,7 @@ public final class AbilityManager {
                 }
                 case WARD -> quietWardens(player);
                 case EYE -> { }
-                case SILENCE -> SilenceEffects.types().forEach(player::removePotionEffect);
+                case SILENCE -> { }
                 case WAYFINDER -> effect(player, PotionEffectType.SPEED, settings.intValue(ability, "speed-level"));
                 case RAISER -> {
                     effect(player, PotionEffectType.JUMP_BOOST, settings.intValue(ability, "jump-boost-level"));
@@ -333,6 +343,7 @@ public final class AbilityManager {
 
     private void cleanup(Player player, TrimAbility previous) {
         UUID id = player.getUniqueId();
+        silence.clear(player);
         removeDune(player);
         removeRaiser(player);
         if (grantedFlight.remove(id) && player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR) {

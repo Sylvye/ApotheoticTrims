@@ -2,6 +2,7 @@ package com.apotheotictrims;
 
 import io.papermc.paper.event.entity.WardenAngerChangeEvent;
 import io.papermc.paper.event.player.PlayerShieldDisableEvent;
+import io.papermc.paper.event.player.PlayerTrackEntityEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.*;
@@ -16,7 +17,6 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.world.GenericGameEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.potion.PotionType;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.util.Vector;
 
@@ -45,12 +45,6 @@ public final class AbilityListener implements Listener {
             long duration = Math.round(settings.value(TrimAbility.SNOUT, "retaliation-seconds") * 1000);
             retaliation.put(new RetaliationKey(enemy.getUniqueId(), credited.getUniqueId()), System.currentTimeMillis() + duration);
             if (enemy instanceof Mob mob) mob.setTarget(credited);
-        }
-
-        if (event.getEntity() instanceof Player victim && abilities.has(victim, TrimAbility.SILENCE)
-                && isInstantDamageSource(event.getDamageSource().getDirectEntity())) {
-            event.setCancelled(true);
-            return;
         }
 
         if (credited != null && abilities.has(credited, TrimAbility.SENTRY)
@@ -196,14 +190,39 @@ public final class AbilityListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPotionEffect(EntityPotionEffectEvent event) {
-        if (event.getEntity() instanceof Player player && event.getNewEffect() != null
-                && abilities.has(player, TrimAbility.SILENCE)
-                && SilenceEffects.isBlocked(event.getNewEffect().getType())) {
-            event.setCancelled(true);
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSilenceDamage(EntityDamageEvent event) {
+        if (event.isCancelled() || event.getFinalDamage() <= 0
+                || !(event.getEntity() instanceof Player victim)) return;
+        Player credited = event instanceof EntityDamageByEntityEvent byEntity ? creditedPlayer(byEntity) : null;
+        if (credited == null && event.getDamageSource().getCausingEntity() instanceof Player player) credited = player;
+        if (credited != null && !credited.getUniqueId().equals(victim.getUniqueId()))
+            abilities.silence().clear(victim);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSilencePotion(EntityPotionEffectEvent event) {
+        if (event.getEntity() instanceof Player player) abilities.silence().potionChanged(player, event);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSneak(PlayerToggleSneakEvent event) {
+        if (!event.isSneaking()) abilities.silence().clear(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTrack(PlayerTrackEntityEvent event) {
+        if (event.getEntity() instanceof Player hidden) {
+            abilities.silence().mask(event.getPlayer(), hidden);
+            Bukkit.getScheduler().runTask(plugin, () -> abilities.silence().mask(event.getPlayer(), hidden));
         }
     }
+
+    @EventHandler public void onJoin(PlayerJoinEvent event) {
+        Bukkit.getScheduler().runTask(plugin, () -> abilities.silence().refreshEquipment());
+    }
+
+    @EventHandler public void onHeld(PlayerItemHeldEvent event) { scheduleRefresh(event.getPlayer()); }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onToggleFlight(PlayerToggleFlightEvent event) {
@@ -223,6 +242,7 @@ public final class AbilityListener implements Listener {
     }
     @EventHandler public void onChangedWorld(PlayerChangedWorldEvent event) {
         abilities.clearEye(event.getPlayer());
+        abilities.silence().clear(event.getPlayer());
         scheduleRefresh(event.getPlayer());
     }
     @EventHandler public void onRespawn(PlayerRespawnEvent event) { scheduleRefresh(event.getPlayer()); }
@@ -243,7 +263,10 @@ public final class AbilityListener implements Listener {
 
     private void scheduleRefresh(Player player) {
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (player.isOnline()) abilities.refresh(player);
+            if (player.isOnline()) {
+                abilities.refresh(player);
+                abilities.silence().refreshEquipment();
+            }
         });
     }
 
@@ -260,21 +283,6 @@ public final class AbilityListener implements Listener {
             if (shooter instanceof Tameable tameable && tameable.getOwner() instanceof Player player) return player;
         }
         return null;
-    }
-
-    private boolean isInstantDamageSource(Entity direct) {
-        if (direct instanceof ThrownPotion potion) {
-            return potion.getEffects().stream().anyMatch(effect -> effect.getType().equals(PotionEffectType.INSTANT_DAMAGE));
-        }
-        if (direct instanceof Arrow arrow) {
-            return arrow.getBasePotionType() == PotionType.HARMING || arrow.getBasePotionType() == PotionType.STRONG_HARMING
-                    || arrow.getCustomEffects().stream().anyMatch(effect -> effect.getType().equals(PotionEffectType.INSTANT_DAMAGE));
-        }
-        if (direct instanceof AreaEffectCloud cloud) {
-            return cloud.getBasePotionType() == PotionType.HARMING || cloud.getBasePotionType() == PotionType.STRONG_HARMING
-                    || cloud.getCustomEffects().stream().anyMatch(effect -> effect.getType().equals(PotionEffectType.INSTANT_DAMAGE));
-        }
-        return false;
     }
 
     private record RetaliationKey(UUID mob, UUID player) {}
