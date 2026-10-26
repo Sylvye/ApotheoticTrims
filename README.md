@@ -43,7 +43,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Bolt:** A 10-hit timed melee combo adds 10 raw damage to the triggering hit and calls visual-only lightning.
 - **Flow:** A disabled shield violently repels nearby living entities and disables hit players' wind charges and ender pearls for 5 seconds. Repeated blasts refresh this duration without shortening longer cooldowns. Already-thrown projectiles are unaffected.
 - **Rib:** Immune to fire damage, including lava, magma blocks, and campfires; Regeneration I is given while burning.
-- **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting.
+- **Ward:** Suppresses the wearer's sculk vibrations and Warden anger/targeting, and grants immunity to Darkness (including clearing existing Darkness when equipped).
 - **Vex:** Totem pops grant Strength II and Speed II for 90 seconds and extend the totem's Fire Resistance from 40 to 90 seconds by default. The Fire Resistance duration can be changed separately in the Vex settings.
 - **Spire:** Slow Falling while sneaking in the air. Void falls wrap to world height and the resulting fall damage is cancelled.
 - **Eye:** Stare at a visible player's hitbox to give them Weakness and Glowing while you keep staring. Hold sneak while staring to add Slowness. Weakness and Slowness levels and Glowing are configurable. Sparse Glow particles appear around the target for everyone.

@@ -200,6 +200,15 @@ public final class AbilityListener implements Listener {
             abilities.silence().clear(victim);
     }
 
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onWardPotion(EntityPotionEffectEvent event) {
+        PotionEffect effect = event.getNewEffect();
+        if (effect != null && effect.getType().equals(PotionEffectType.DARKNESS)
+                && event.getEntity() instanceof Player player && abilities.has(player, TrimAbility.WARD)) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSilencePotion(EntityPotionEffectEvent event) {
         if (event.getEntity() instanceof Player player) abilities.silence().potionChanged(player, event);

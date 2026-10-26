@@ -121,6 +121,7 @@ public final class AbilityManager {
                 playActivationFeedback(player, detected);
             }
         }
+        if (detected == TrimAbility.WARD) player.removePotionEffect(PotionEffectType.DARKNESS);
     }
 
     private void tick() {
