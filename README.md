@@ -51,7 +51,7 @@ In an ability screen, left/right click changes a number by its small step and sh
 - **Wayfinder:** Speed II.
 - **Raiser:** Jump Boost II and double step height (0.6 -> 1.2).
 - **Shaper:** Haste II.
-- **Host:** Hero of the Village V and Luck I.
+- **Host:** Hero of the Village V; Luck I while holding an emerald in the offhand. The emerald is not consumed, and Luck expires within 1.5 seconds after removing the emerald or Host trim.
 
 ## Verification
 

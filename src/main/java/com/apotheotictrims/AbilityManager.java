@@ -168,7 +168,9 @@ public final class AbilityManager {
                 case SHAPER -> effect(player, PotionEffectType.HASTE, settings.intValue(ability, "haste-level"));
                 case HOST -> {
                     effect(player, PotionEffectType.HERO_OF_THE_VILLAGE, settings.intValue(ability, "hero-level"));
-                    effect(player, PotionEffectType.LUCK, settings.intValue(ability, "luck-level"));
+                    if (player.getInventory().getItemInOffHand().getType() == Material.EMERALD) {
+                        effect(player, PotionEffectType.LUCK, settings.intValue(ability, "luck-level"));
+                    }
                 }
                 default -> { }
             }

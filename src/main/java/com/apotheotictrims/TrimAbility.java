@@ -53,7 +53,7 @@ public enum TrimAbility {
             decimal("step-height-bonus", "Step height bonus", .6, 0, 10, .05, .25)),
     SHAPER("Shaper", Material.SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE, "Permanent Haste",
             level("haste-level", "Haste level", 2)),
-    HOST("Host", Material.HOST_ARMOR_TRIM_SMITHING_TEMPLATE, "Permanent Hero of the Village and Luck",
+    HOST("Host", Material.HOST_ARMOR_TRIM_SMITHING_TEMPLATE, "Permanent Hero of the Village; Luck while holding an emerald in your offhand",
             level("hero-level", "Hero of the Village level", 5),
             level("luck-level", "Luck level", 1));
 
