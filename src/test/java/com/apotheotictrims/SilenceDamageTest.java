@@ -32,13 +32,33 @@ class SilenceDamageTest {
         verify(silence, times(4)).clear(victim);
     }
 
-    @Test void ignoresCancelledZeroDamageSelfHitsMobsAndEnvironment() {
+    @Test void resetsOnZeroAndFractionalDamageFromAnyCreditedHit() {
+        when(abilities.silence()).thenReturn(silence);
+        WindCharge charge = mock(WindCharge.class);
+        when(charge.getShooter()).thenReturn(attacker);
+        Arrow arrow = mock(Arrow.class);
+        when(arrow.getShooter()).thenReturn(attacker);
+        for (Entity damager : new Entity[] { attacker, charge, arrow }) {
+            for (double amount : new double[] { 0.0, 0.001 }) {
+                EntityDamageByEntityEvent damage = hit(damager, null);
+                when(damage.getFinalDamage()).thenReturn(amount);
+                listener.onSilenceDamage(damage);
+            }
+        }
+        // Attribution also applies to damage that is not an entity-hit event.
+        EntityDamageEvent damage = mock(EntityDamageEvent.class);
+        DamageSource source = mock(DamageSource.class);
+        when(source.getCausingEntity()).thenReturn(attacker);
+        when(damage.getDamageSource()).thenReturn(source);
+        when(damage.getEntity()).thenReturn(victim);
+        listener.onSilenceDamage(damage);
+        verify(silence, times(7)).clear(victim);
+    }
+
+    @Test void ignoresCancelledSelfHitsMobsAndEnvironment() {
         EntityDamageByEntityEvent cancelled = hit(attacker, attacker);
         when(cancelled.isCancelled()).thenReturn(true);
         listener.onSilenceDamage(cancelled);
-        EntityDamageByEntityEvent blocked = hit(attacker, attacker);
-        when(blocked.getFinalDamage()).thenReturn(0.0);
-        listener.onSilenceDamage(blocked);
         listener.onSilenceDamage(hit(victim, victim));
         listener.onSilenceDamage(hit(mock(Zombie.class), null));
         EntityDamageEvent fall = mock(EntityDamageEvent.class);

@@ -192,8 +192,8 @@ public final class AbilityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSilenceDamage(EntityDamageEvent event) {
-        if (event.isCancelled() || event.getFinalDamage() <= 0
-                || !(event.getEntity() instanceof Player victim)) return;
+        // Even hits reduced to zero (such as wind charges or absorbed attacks) reveal Silence.
+        if (event.isCancelled() || !(event.getEntity() instanceof Player victim)) return;
         Player credited = event instanceof EntityDamageByEntityEvent byEntity ? creditedPlayer(byEntity) : null;
         if (credited == null && event.getDamageSource().getCausingEntity() instanceof Player player) credited = player;
         if (credited != null && !credited.getUniqueId().equals(victim.getUniqueId()))
