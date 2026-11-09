@@ -1,10 +1,15 @@
 package com.apotheotictrims;
 
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.entity.*;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.UUID;
 
@@ -14,7 +19,8 @@ import static org.mockito.Mockito.*;
 class SilenceDamageTest {
     private final AbilityManager abilities = mock(AbilityManager.class);
     private final SilenceManager silence = mock(SilenceManager.class);
-    private final AbilityListener listener = new AbilityListener(mock(ApotheoticTrimsPlugin.class),
+    private final ApotheoticTrimsPlugin plugin = mock(ApotheoticTrimsPlugin.class);
+    private final AbilityListener listener = new AbilityListener(plugin,
             mock(SettingsManager.class), abilities);
     private final Player victim = player(), attacker = player();
 
@@ -80,6 +86,51 @@ class SilenceDamageTest {
         verify(damage, never()).setCancelled(anyBoolean());
         verify(silence).clear(victim);
         verify(silence, never()).clear(attacker);
+    }
+
+    @Test void meleeWithoutDamageEventStillResetsSilence() {
+        PrePlayerAttackEntityEvent attack = new PrePlayerAttackEntityEvent(attacker, victim, true);
+        Runnable reset = runDeferredContact(() -> listener.onSilenceMeleeContact(attack), () -> {});
+        verify(reset).run();
+    }
+
+    @Test void cancelledProjectileDamageSuppressesContactFallback() {
+        WindCharge charge = mock(WindCharge.class);
+        when(charge.getShooter()).thenReturn(attacker);
+        when(charge.getUniqueId()).thenReturn(UUID.randomUUID());
+        EntityDamageByEntityEvent damage = hit(charge, attacker);
+        when(damage.isCancelled()).thenReturn(true);
+        Runnable reset = runDeferredContact(
+                () -> listener.onSilenceProjectileContact(new ProjectileHitEvent(charge, victim)),
+                () -> listener.onSilenceDamage(damage));
+        verifyNoInteractions(reset);
+        verify(silence, never()).clear(victim);
+    }
+
+    @Test void projectileWithoutDamageEventStillResetsSilence() {
+        WindCharge charge = mock(WindCharge.class);
+        when(charge.getShooter()).thenReturn(attacker);
+        when(charge.getUniqueId()).thenReturn(UUID.randomUUID());
+        Runnable reset = runDeferredContact(
+                () -> listener.onSilenceProjectileContact(new ProjectileHitEvent(charge, victim)), () -> {});
+        verify(reset).run();
+    }
+
+    private Runnable runDeferredContact(Runnable contact, Runnable damage) {
+        Runnable reset = mock(Runnable.class);
+        when(abilities.silence()).thenReturn(silence);
+        when(silence.resetCurrentCharge(victim)).thenReturn(reset);
+        BukkitScheduler scheduler = mock(BukkitScheduler.class);
+        try (var bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            contact.run();
+            damage.run();
+            var task = ArgumentCaptor.forClass(Runnable.class);
+            verify(scheduler).runTask(eq(plugin), task.capture());
+            verifyNoInteractions(reset);
+            task.getValue().run();
+        }
+        return reset;
     }
 
     private EntityDamageByEntityEvent hit(Entity damager, Entity causing) {

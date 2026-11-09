@@ -4,6 +4,7 @@ main: com.apotheotictrims.ApotheoticTrimsPlugin
 description: Full armor trim sets grant configurable special abilities.
 author: Sylvye
 api-version: '26.2'
+depend: [packetevents]
 commands:
   trims:
     description: View and configure trim abilities.

@@ -6,6 +6,7 @@ ApotheoticTrims is a Paper 26.2 plugin that grants one special ability when a pl
 
 - Paper 26.2 build 129 or newer compatible build
 - Java 25
+- [PacketEvents 2.13.0](https://github.com/retrooper/packetevents/releases/tag/v2.13.0) (install the Spigot jar in `plugins`)
 
 Build with `./gradlew build` (`gradlew.bat build` on Windows), then copy `build/libs/ApotheoticTrims-1.0.0.jar` into the server's `plugins` directory and restart the server.
 

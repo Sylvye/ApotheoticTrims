@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SilenceManagerTest {
     private final SettingsManager settings = mock(SettingsManager.class);
@@ -58,7 +59,7 @@ class SilenceManagerTest {
         ticks(1);
         verify(visibility).stop(eq(player), anyLong());
         verify(visibility).equipment(viewer, player, false);
-        manager.mask(viewer, player);
+        assertFalse(manager.masksEquipment(player.getEntityId(), viewer.getUniqueId()));
         verify(visibility, times(1)).stop(any(), anyLong());
     }
 
@@ -104,13 +105,22 @@ class SilenceManagerTest {
         ticks(300);
         verify(player, never()).sendActionBar(any(Component.class));
         verifyNoInteractions(world);
-        Player newcomer = player();
-        manager.mask(newcomer, player);
-        verify(visibility).equipment(newcomer, player, true);
+        UUID newcomer = UUID.randomUUID();
+        assertTrue(manager.masksEquipment(player.getEntityId(), newcomer));
+        assertFalse(manager.masksEquipment(player.getEntityId(), player.getUniqueId()));
         manager.clear(player);
-        clearInvocations(visibility);
-        manager.mask(newcomer, player);
-        verifyNoInteractions(visibility);
+        assertFalse(manager.masksEquipment(player.getEntityId(), newcomer));
+    }
+
+    @Test void deferredContactCannotClearAReplacementCharge() {
+        ticks(300);
+        Runnable oldReset = manager.resetCurrentCharge(player);
+        manager.clear(player);
+        ticks(300);
+        oldReset.run();
+        assertTrue(manager.masksEquipment(player.getEntityId(), viewer.getUniqueId()));
+        manager.resetCurrentCharge(player).run();
+        assertFalse(manager.masksEquipment(player.getEntityId(), viewer.getUniqueId()));
     }
 
     private void ticks(int count) {

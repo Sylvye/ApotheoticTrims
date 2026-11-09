@@ -12,6 +12,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 /** Sneak charging and invisibility with particles and Grungler-style equipment masking. */
@@ -19,6 +20,7 @@ public final class SilenceManager {
     private final SettingsManager settings;
     private final Visibility visibility;
     private final Map<UUID, State> states = new HashMap<>();
+    private final Map<Integer, UUID> hiddenEntities = new ConcurrentHashMap<>();
     private long tick;
 
     SilenceManager(SettingsManager settings) { this(settings, new PotionVisibility()); }
@@ -39,9 +41,10 @@ public final class SilenceManager {
             int required = Math.max(1, (int) Math.ceil(settings.value(TrimAbility.SILENCE, "charge-seconds") * 20));
             if (!state.hidden && ++state.charged >= required) {
                 state.hidden = true;
+                hiddenEntities.put(player.getEntityId(), player.getUniqueId());
                 visibility.start(player, tick);
                 message(player, "Silence: Invisible");
-                refreshEquipment();
+                sendEquipment(player, true);
             }
             if (state.hidden) {
                 visibility.refresh(player, tick);
@@ -52,18 +55,15 @@ public final class SilenceManager {
                         player.getLocation().add(0, 1, 0), 2, .25, .4, .25, .005);
             }
         }
-        // As in Grungler, repeat client equipment overrides to cover normal equipment packets.
-        if (tick % 2 == 0) refreshEquipment();
     }
 
     public void clear(Player player) {
         State state = states.remove(player.getUniqueId());
         if (state == null) return;
         if (state.hidden) {
+            hiddenEntities.remove(player.getEntityId(), player.getUniqueId());
             visibility.stop(player, tick);
-            for (Player viewer : Bukkit.getOnlinePlayers()) {
-                if (!viewer.equals(player)) visibility.equipment(viewer, player, false);
-            }
+            sendEquipment(player, false);
         }
         if (settings.actionBar()) player.sendActionBar(Component.empty());
     }
@@ -72,15 +72,23 @@ public final class SilenceManager {
         for (State state : List.copyOf(states.values())) clear(state.player);
     }
 
-    public void mask(Player viewer, Player hidden) {
-        State state = states.get(hidden.getUniqueId());
-        if (state != null && state.hidden && !viewer.equals(hidden)) visibility.equipment(viewer, hidden, true);
+    Runnable resetCurrentCharge(Player player) {
+        UUID id = player.getUniqueId();
+        State state = states.get(id);
+        if (state == null) return null;
+        return () -> {
+            if (states.get(id) == state) clear(player);
+        };
     }
 
-    public void refreshEquipment() {
-        if (states.values().stream().noneMatch(state -> state.hidden)) return;
+    boolean masksEquipment(int entityId, UUID viewer) {
+        UUID subject = hiddenEntities.get(entityId);
+        return subject != null && !subject.equals(viewer);
+    }
+
+    private void sendEquipment(Player player, boolean hidden) {
         for (Player viewer : Bukkit.getOnlinePlayers()) {
-            for (State state : states.values()) if (state.hidden) mask(viewer, state.player);
+            if (!viewer.equals(player)) visibility.equipment(viewer, player, hidden);
         }
     }
 

@@ -2,7 +2,7 @@ package com.apotheotictrims;
 
 import io.papermc.paper.event.entity.WardenAngerChangeEvent;
 import io.papermc.paper.event.player.PlayerShieldDisableEvent;
-import io.papermc.paper.event.player.PlayerTrackEntityEvent;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.*;
@@ -29,6 +29,7 @@ public final class AbilityListener implements Listener {
     private final SettingsManager settings;
     private final AbilityManager abilities;
     private final Map<RetaliationKey, Long> retaliation = new HashMap<>();
+    private final Map<SilenceContactKey, SilenceContact> silenceContacts = new HashMap<>();
 
     public AbilityListener(ApotheoticTrimsPlugin plugin, SettingsManager settings, AbilityManager abilities) {
         this.plugin = plugin;
@@ -190,14 +191,52 @@ public final class AbilityListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onSilenceDamage(EntityDamageEvent event) {
-        // Even hits reduced to zero (such as wind charges or absorbed attacks) reveal Silence.
-        if (event.isCancelled() || !(event.getEntity() instanceof Player victim)) return;
+        if (!(event.getEntity() instanceof Player victim)) return;
+        if (!silenceContacts.isEmpty()) {
+            Entity direct = event.getDamageSource().getDirectEntity();
+            if (event instanceof EntityDamageByEntityEvent byEntity) matchSilenceContact(victim, byEntity.getDamager());
+            matchSilenceContact(victim, direct == null ? event.getDamageSource().getCausingEntity() : direct);
+        }
+        if (event.isCancelled()) return;
         Player credited = event instanceof EntityDamageByEntityEvent byEntity ? creditedPlayer(byEntity) : null;
         if (credited == null && event.getDamageSource().getCausingEntity() instanceof Player player) credited = player;
         if (credited != null && !credited.getUniqueId().equals(victim.getUniqueId()))
             abilities.silence().clear(victim);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSilenceMeleeContact(PrePlayerAttackEntityEvent event) {
+        if (event.willAttack() && event.getAttacked() instanceof Player victim) {
+            deferSilenceContact(victim, event.getPlayer(), event.getPlayer());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSilenceProjectileContact(ProjectileHitEvent event) {
+        if (event.getHitEntity() instanceof Player victim) {
+            deferSilenceContact(victim, event.getEntity(), creditedPlayer(event.getEntity().getShooter()));
+        }
+    }
+
+    private void deferSilenceContact(Player victim, Entity source, Player credited) {
+        if (credited == null || credited.getUniqueId().equals(victim.getUniqueId())) return;
+        Runnable reset = abilities.silence().resetCurrentCharge(victim);
+        if (reset == null) return;
+        SilenceContactKey key = new SilenceContactKey(victim.getUniqueId(), source.getUniqueId());
+        SilenceContact contact = new SilenceContact();
+        silenceContacts.put(key, contact);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            silenceContacts.remove(key, contact);
+            if (!contact.matchedDamage) reset.run();
+        });
+    }
+
+    private void matchSilenceContact(Player victim, Entity source) {
+        if (source == null) return;
+        SilenceContact contact = silenceContacts.remove(new SilenceContactKey(victim.getUniqueId(), source.getUniqueId()));
+        if (contact != null) contact.matchedDamage = true;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -217,18 +256,6 @@ public final class AbilityListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSneak(PlayerToggleSneakEvent event) {
         if (!event.isSneaking()) abilities.silence().clear(event.getPlayer());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onTrack(PlayerTrackEntityEvent event) {
-        if (event.getEntity() instanceof Player hidden) {
-            abilities.silence().mask(event.getPlayer(), hidden);
-            Bukkit.getScheduler().runTask(plugin, () -> abilities.silence().mask(event.getPlayer(), hidden));
-        }
-    }
-
-    @EventHandler public void onJoin(PlayerJoinEvent event) {
-        Bukkit.getScheduler().runTask(plugin, () -> abilities.silence().refreshEquipment());
     }
 
     @EventHandler public void onHeld(PlayerItemHeldEvent event) { scheduleRefresh(event.getPlayer()); }
@@ -274,7 +301,6 @@ public final class AbilityListener implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (player.isOnline()) {
                 abilities.refresh(player);
-                abilities.silence().refreshEquipment();
             }
         });
     }
@@ -287,11 +313,20 @@ public final class AbilityListener implements Listener {
         if (damager instanceof Player player) return player;
         if (damager instanceof Tameable tameable && tameable.getOwner() instanceof Player player) return player;
         if (damager instanceof Projectile projectile) {
-            ProjectileSource shooter = projectile.getShooter();
-            if (shooter instanceof Player player) return player;
-            if (shooter instanceof Tameable tameable && tameable.getOwner() instanceof Player player) return player;
+            return creditedPlayer(projectile.getShooter());
         }
         return null;
+    }
+
+    private Player creditedPlayer(ProjectileSource shooter) {
+        if (shooter instanceof Player player) return player;
+        if (shooter instanceof Tameable tameable && tameable.getOwner() instanceof Player player) return player;
+        return null;
+    }
+
+    private record SilenceContactKey(UUID victim, UUID source) {}
+    private static final class SilenceContact {
+        boolean matchedDamage;
     }
 
     private record RetaliationKey(UUID mob, UUID player) {}

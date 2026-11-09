@@ -1,5 +1,6 @@
 package com.apotheotictrims;
 
+import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -7,6 +8,7 @@ public final class ApotheoticTrimsPlugin extends JavaPlugin {
     private SettingsManager settings;
     private AbilityManager abilities;
     private ChatInputManager chatInput;
+    private SilenceEquipmentListener silenceEquipment;
 
     @Override
     public void onEnable() {
@@ -35,6 +37,8 @@ public final class ApotheoticTrimsPlugin extends JavaPlugin {
         command.setExecutor(handler);
         command.setTabCompleter(handler);
 
+        silenceEquipment = new SilenceEquipmentListener(abilities.silence());
+        PacketEvents.getAPI().getEventManager().registerListener(silenceEquipment);
         abilities.start();
         getLogger().info("ApotheoticTrims enabled with " + TrimAbility.values().length + " trim abilities.");
     }
@@ -43,5 +47,6 @@ public final class ApotheoticTrimsPlugin extends JavaPlugin {
     public void onDisable() {
         if (chatInput != null) chatInput.clear();
         if (abilities != null) abilities.stop();
+        if (silenceEquipment != null) PacketEvents.getAPI().getEventManager().unregisterListener(silenceEquipment);
     }
 }
